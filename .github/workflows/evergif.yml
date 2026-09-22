@@ -193,11 +193,11 @@ jobs:
               [ -n "$serve_pid" ] && kill "$serve_pid" 2>/dev/null
               exit 1
             fi
-            node "$script"
-            status=$?
+            node "$script" 2>&1 | tee "/tmp/$name.log"
+            status=${PIPESTATUS[0]}
             [ -n "$serve_pid" ] && kill "$serve_pid" 2>/dev/null
             if [ "$status" -ne 0 ] || [ ! -f "$webm" ]; then
-              echo "::error::recording failed for demo '$name'"
+              echo "::error::recording failed for demo '$name': $(tail -n 3 "/tmp/$name.log" | tr '\n' ' ')"
               exit 1
             fi
             ffmpeg -v error -y -i "$webm" -vf \
