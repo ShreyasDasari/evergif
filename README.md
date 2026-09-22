@@ -177,6 +177,19 @@ add the workflow creates `demo/evergif.lock`, so expect one PR to start with.
 The workflow needs **Settings → Actions → General → Allow GitHub Actions to
 create and approve pull requests**.
 
+## Rendering in the cloud
+
+`--ci` also adds `evergif-render.yml`, so nobody needs a local toolchain to
+change a demo. Edit `demo/<name>.tape`, open a pull request, and CI renders the
+GIF and pushes it back onto your branch. You can also trigger it by hand from
+the Actions tab for one demo or all of them.
+
+Pull requests **from forks** get the rendered GIFs as a downloadable artifact
+instead of a push. That is deliberate: a tape is executable content, so
+rendering it with a write token and repository secrets — which is what
+`pull_request_target` would do — would hand any stranger who opens a pull
+request the keys to the repo. evergif never uses `pull_request_target`.
+
 ## What's in this repo
 
 ```

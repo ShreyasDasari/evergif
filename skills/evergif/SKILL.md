@@ -26,7 +26,7 @@ All optional. Parse them from the user's request, in any wording.
 | `--commands "a; b"` | Exact commands to record (1–3, `;`-separated) | You pick them in step 2 |
 | `--name NAME` | Which demo to write; a README can hold several | `evergif` |
 | `--theme NAME` | Any theme from `vhs themes` | `Catppuccin Mocha` |
-| `--ci` | Also add `.github/workflows/evergif.yml` | off |
+| `--ci` | Also add the GitHub workflows (freshness + cloud rendering) | off |
 
 **Several demos in one README.** Each demo is a name: `demo/<name>.tape`,
 `demo/<name>.gif`, and its own marker pair. Use one when the user asks for a
@@ -122,11 +122,18 @@ python3 "$SKILL_DIR/scripts/ci.py" --setup "SETUP COMMAND"
 runner (e.g. `pip install -e .`, `npm ci`, `go build ./...`). Repeat the flag
 for several steps, or omit it if nothing is needed.
 
+This writes two workflows: `evergif.yml` keeps the GIFs fresh, and
+`evergif-render.yml` renders them in CI so contributors without vhs can edit a
+tape, open a PR, and get the GIF rendered and pushed back for them
+(`--no-cloud` skips the second one).
+
 The workflow covers every demo in `demo/`. It re-runs each demo's recorded
 commands, hashes the output against `demo/<name>.lock`, and re-renders and
-opens one PR for only the demos whose output changed. Tell the user to enable **Settings → Actions → General → Allow GitHub
-Actions to create and approve pull requests**, and that the first run creates
-the lock file, so it opens one PR.
+opens one PR for only the demos whose output changed.
+
+Tell the user to enable **Settings → Actions → General → Allow GitHub Actions
+to create and approve pull requests**, and that the first run creates the lock
+files, so it opens one PR.
 
 ### 7. Report
 
