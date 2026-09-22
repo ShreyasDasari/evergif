@@ -1,18 +1,18 @@
 ---
 name: evergif
-description: Generate a reproducible terminal demo GIF for a CLI or TUI project's README and keep it fresh in CI. Inspects the project, writes a deterministic vhs tape (demo/evergif.tape), renders and optimizes demo/evergif.gif, and embeds it in README.md between evergif markers. Use when the user says "run evergif", "/evergif", "add a demo gif to my README", "record a terminal demo", "make a GIF of my CLI", "update the README gif", or wants their README demo to stop going stale.
+description: Generate reproducible demo GIFs for a README and keep them fresh in CI. Records terminal demos of CLI and TUI projects with vhs, and browser demos of web apps with Playwright, then optimizes each GIF and embeds it in README.md between evergif markers. Use when the user says "run evergif", "/evergif", "add a demo gif to my README", "record a terminal demo", "record a demo of my web app", "make a GIF of my CLI", "update the README gif", or wants their README demos to stop going stale.
 license: MIT
-compatibility: Requires Python 3.10+ and either vhs (with ttyd and ffmpeg) or Docker. CLI/TUI projects only.
+compatibility: Requires Python 3.10+ and either vhs (with ttyd and ffmpeg) or Docker. Web demos also need Node 18+ and Playwright, which evergif fetches on demand.
 metadata:
-  version: "0.1.0"
+  version: "0.2.0"
   homepage: https://github.com/ShreyasDasari/evergif
 ---
 
 # evergif
 
-Your README demo that never goes stale. This skill turns a CLI/TUI project
-into `demo/evergif.tape` → `demo/evergif.gif` → a README embed, and
-optionally a CI workflow that re-renders it.
+Your README demo that never goes stale. This skill turns a CLI, TUI or web
+project into a committed recording script → an optimized GIF → a README embed,
+and optionally CI workflows that keep it current.
 
 Everything below is plain shell. `SKILL_DIR` means the directory containing
 this file; run every command from the **target project's root**.
@@ -26,6 +26,7 @@ All optional. Parse them from the user's request, in any wording.
 | `--commands "a; b"` | Exact commands to record (1–3, `;`-separated) | You pick them in step 2 |
 | `--name NAME` | Which demo to write; a README can hold several | `evergif` |
 | `--theme NAME` | Any theme from `vhs themes` | `Catppuccin Mocha` |
+| `--web` | Record a web app with Playwright instead of a terminal | off |
 | `--ci` | Also add the GitHub workflows (freshness + cloud rendering) | off |
 
 **Several demos in one README.** Each demo is a name: `demo/<name>.tape`,
@@ -34,6 +35,10 @@ demo of a particular feature ("add a gif showing the install flow" →
 `--name install`), and keep the default `evergif` for the main demo. Pass
 `--name` to steps 3 and 5. Never overwrite an existing demo with unrelated
 content: list `demo/*.tape` first and pick a new name if none fits.
+
+**Web demos.** If the project is a web app, or the user asks for a demo of a
+page or a UI flow, use the web path in step 3w/4w instead of steps 3 and 4.
+Everything else (naming, embedding, CI) is identical.
 
 ## Workflow
 
@@ -99,6 +104,34 @@ when possible and fails if the GIF is over 5 MB. If rendering fails or the
 GIF looks wrong (errors on screen, cut-off output), fix the tape and re-run.
 See [references/optimization.md](references/optimization.md) and
 [references/troubleshooting.md](references/troubleshooting.md).
+
+### 3w. Write the web script (web demos only)
+
+```bash
+python3 "$SKILL_DIR/scripts/web_tape.py" --name NAME --url http://localhost:PORT \
+  --serve "COMMAND THAT STARTS THE APP" --size 1000x620 \
+  --steps "goto /; wait SELECTOR; fill SELECTOR TEXT; click SELECTOR; pause 900"
+```
+
+Read the project first to get the dev-server command and port (`package.json`
+scripts, a Makefile, the README). Pick selectors from the actual markup, not
+from guesses: read the templates or components. Steps are `goto`, `click`,
+`fill`, `press`, `wait`, `scroll`, `pause`. Start with `goto /` and a `wait`
+on something that only exists once the page is ready.
+
+The script refuses non-localhost URLs and anything touching credentials. Never
+record a login.
+
+### 4w. Record and convert (web demos only)
+
+```bash
+python3 "$SKILL_DIR/scripts/render_web.py" --name NAME
+```
+
+It starts the app, waits for the URL, records, converts the video to a GIF and
+optimizes it. Then continue with step 5. See
+[references/web-demos.md](references/web-demos.md) for selectors, determinism
+and sizing.
 
 ### 5. Embed in the README
 

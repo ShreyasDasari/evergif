@@ -125,6 +125,26 @@ README.md             an embed between <!-- evergif:start --> / <!-- evergif:end
 
 Re-running evergif updates the marker block in place. It never adds a second one.
 
+### Web apps
+
+evergif records browser demos too, with Playwright instead of vhs. Point it at
+your dev server and describe the steps; it starts the app, records, and writes
+the same kind of committed, reviewable script:
+
+```bash
+evergif --web --url http://localhost:3000 --serve "npm run dev" \
+  --steps "goto /; fill #title Buy milk; click #add; wait li:nth-child(3)"
+```
+
+<!-- evergif:start:webapp -->
+![Browser demo: the Tasks web app, typing 'Record a GIF of this app' into the input, clicking Add task, and the list growing to three items with the counter reading 1 done - 2 open](demo/webapp.gif)
+<!-- evergif:end:webapp -->
+
+
+That GIF is `examples/webapp`, recorded by evergif's own CI on every run. Web
+demos are localhost-only by default and refuse to record credentials, so a
+login flow can never end up in your README.
+
 ### More than one demo
 
 Ask for a demo of a specific feature and it becomes its own named demo:
@@ -198,24 +218,27 @@ request the keys to the repo. evergif never uses `pull_request_target`.
 
 ```
 skills/evergif/SKILL.md        the canonical skill; everything else points here
-skills/evergif/scripts/        doctor, inspect, tape, render, embed, ci (Python 3.10+, stdlib only)
-skills/evergif/references/     tape cookbook, optimization, troubleshooting
+skills/evergif/scripts/        doctor, inspect, tape, render, web_tape, render_web, embed, ci
+skills/evergif/references/     tape cookbook, web demos, optimization, troubleshooting
 .claude/skills/evergif    ->   ../../skills/evergif
 .agents/skills/evergif    ->   ../../skills/evergif
 .gemini/skills/evergif    ->   ../../skills/evergif
 .claude-plugin/                Claude Code plugin + marketplace manifests
-examples/                      two tiny CLI fixtures evergif is tested against
+examples/                      two CLI fixtures and one web app, all recorded by CI
 ```
 
 There is exactly one copy of the skill. Every agent path is a symlink to it.
 
 ## Roadmap
 
-v0.1 covers CLI and TUI projects. Planned next:
+**v0.2 (current)** — web app demos with Playwright, rendering in the cloud so
+contributors need no local toolchain, and several demo GIFs per README.
 
-- **v0.2** — web apps: record browser demos with Playwright.
-- Cloud rendering, so contributors do not need a local toolchain.
-- Multiple demo GIFs per README, one per feature.
+Planned next:
+
+- Dark and light variants of the same demo, switched by the reader's theme.
+- A `--check` mode for pre-commit hooks, failing when a demo is stale.
+- Demos of interactive TUIs without hand-writing the tape.
 
 ## License
 

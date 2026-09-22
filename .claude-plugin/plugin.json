@@ -1,7 +1,7 @@
 {
   "name": "evergif",
-  "description": "Generate a reproducible terminal demo GIF for your README and keep it fresh in CI.",
-  "version": "0.1.0",
+  "description": "Generate demo GIFs for your README -- terminal or web -- and keep them fresh in CI.",
+  "version": "0.2.0",
   "author": {
     "name": "Shreyas Dasari",
     "url": "https://github.com/ShreyasDasari"
@@ -9,5 +9,12 @@
   "license": "MIT",
   "homepage": "https://github.com/ShreyasDasari/evergif",
   "repository": "https://github.com/ShreyasDasari/evergif",
-  "keywords": ["gif", "demo", "readme", "cli", "vhs", "skill"]
+  "keywords": [
+    "gif",
+    "demo",
+    "readme",
+    "cli",
+    "vhs",
+    "skill"
+  ]
 }
