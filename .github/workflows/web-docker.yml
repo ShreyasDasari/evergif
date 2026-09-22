@@ -1,0 +1,51 @@
+name: web docker
+
+# Verifies the Docker fallback for web demos: recording with no Node, no
+# Playwright and no browsers installed, only the official image. It runs when
+# the web scripts change, monthly, or on demand -- the image is ~1 GB, so it is
+# not worth pulling on every push.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'skills/evergif/scripts/render_web.py'
+      - 'skills/evergif/scripts/web_tape.py'
+      - '.github/workflows/web-docker.yml'
+  schedule:
+    - cron: '0 5 1 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  docker:
+    name: Record a web demo through Docker
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Record with --docker
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg gifsicle
+          python3 skills/evergif/scripts/render_web.py --docker --name webapp \
+            --keep-webm
+          test -f demo/webapp.gif
+          echo "::notice::docker-mode GIF: $(stat -c%s demo/webapp.gif) bytes"
+
+      - name: The recording must not be blank
+        run: |
+          set -euo pipefail
+          # A silently broken recording still produces a file, so check that the
+          # frames actually differ from one another.
+          frames=$(ffmpeg -v error -i demo/webapp.gif -f framemd5 - | grep -vc '^#')
+          unique=$(ffmpeg -v error -i demo/webapp.gif -f framemd5 - | grep -v '^#' \
+            | awk '{print $6}' | sort -u | wc -l)
+          echo "::notice::frames=$frames unique=$unique"
+          if [ "$unique" -lt 3 ]; then
+            echo "::error::the Docker recording has $unique distinct frames; it is blank or frozen"
+            exit 1
+          fi

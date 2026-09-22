@@ -8,6 +8,10 @@ Usage: render_web.py [--name NAME | --script PATH] [--all]
 Starts the app (the `serve` command recorded in the script), waits for the URL
 to answer, records the demo, converts the video to a GIF, and optimizes it.
 
+--docker records with the official Playwright image instead of a local Node,
+for machines with no Node at all. It needs a Linux host: the container reaches
+the app through --network host, which Docker Desktop and Colima do not provide.
+
 Freshness: the script writes demo/<name>.transcript.txt, the visible text after
 each step. Its hash goes in demo/<name>.lock, so a web demo is only considered
 changed when the page's content changed, not when a pixel moved.
@@ -112,8 +116,11 @@ def ensure_browser(env: dict) -> None:
 def run_script(script: Path, cwd: Path, docker: bool) -> None:
     if docker:
         cmd = ["docker", "run", "--rm", "--ipc=host", "--init",
-               "-v", f"{cwd}:/work", "-w", "/work", "--network", "host",
-               PLAYWRIGHT_IMAGE, "node", script.as_posix()]
+               "-v", f"{cwd}:/work", "-w", "/work", "--network", "host"]
+        if hasattr(os, "getuid"):
+            # Without this the recording lands in the repo owned by root.
+            cmd += ["--user", f"{os.getuid()}:{os.getgid()}", "-e", "HOME=/tmp"]
+        cmd += [PLAYWRIGHT_IMAGE, "node", script.as_posix()]
         env = None
     else:
         env = node_env()
