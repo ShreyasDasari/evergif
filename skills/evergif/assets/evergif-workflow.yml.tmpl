@@ -208,6 +208,8 @@ __EVERGIF_SETUP__
         run: |
           set -uo pipefail
           changed=''
+          found=''
+          echo "::notice::web demos found: $(ls demo/*.web.mjs 2>&1 | tr '\n' ' ')"
           read_key() { python3 -c "import json,sys;print(json.load(open(sys.argv[1])).get(sys.argv[2]) or '')" "$1" "$2"; }
           for script in demo/*.web.mjs; do
             [ -e "$script" ] || continue
@@ -256,8 +258,11 @@ __EVERGIF_SETUP__
               changed="$changed $name"
             fi
             rm -f "$transcript"
-            ls -lh "demo/$name.gif"
+            found="$found $name"
+            echo "::notice::$name -> $(ls -l "demo/$name.gif" 2>&1 | awk '{print $5}') bytes, lock $new"
           done
+          echo "::notice::processed:${found:- none} changed:${changed:- none}"
+          echo "::notice::git status: $(git status --porcelain demo/ | tr '\n' ' ')"
           echo "changed=${changed# }" >> "$GITHUB_OUTPUT"
 
       - name: Commit the refreshed web GIFs
