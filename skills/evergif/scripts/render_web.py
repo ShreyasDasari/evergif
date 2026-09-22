@@ -120,7 +120,10 @@ def run_script(script: Path, cwd: Path, docker: bool) -> None:
         if hasattr(os, "getuid"):
             # Without this the recording lands in the repo owned by root.
             cmd += ["--user", f"{os.getuid()}:{os.getgid()}", "-e", "HOME=/tmp"]
-        cmd += [PLAYWRIGHT_IMAGE, "node", script.as_posix()]
+        # NODE_PATH must point at the image's global modules: require() does
+        # not search them on its own.
+        cmd += [PLAYWRIGHT_IMAGE, "sh", "-c",
+                f'export NODE_PATH="$(npm root -g)"; exec node {script.as_posix()}']
         env = None
     else:
         env = node_env()
