@@ -1,0 +1,47 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'demo/*.gif'
+      - 'demo/*.lock'
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: Scripts and generated workflows
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        # The floor the skill claims, and a current release.
+        python: ['3.10', '3.13']
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Run the test suite
+        run: python -m unittest discover -s tests -v
+      - name: Check the generated workflows
+        run: |
+          set -euo pipefail
+          python skills/evergif/scripts/ci.py --setup 'echo hi' --out /tmp/a.yml \
+            --cloud-out /tmp/b.yml
+          python skills/evergif/scripts/ci.py --pr --setup 'echo hi' --out /tmp/c.yml \
+            --no-cloud
+          curl -fsSL -o /tmp/actionlint.tgz \
+            https://github.com/rhysd/actionlint/releases/download/v1.7.7/actionlint_1.7.7_linux_amd64.tar.gz
+          tar -xzf /tmp/actionlint.tgz -C /tmp actionlint
+          /tmp/actionlint -no-color -oneline /tmp/a.yml /tmp/b.yml /tmp/c.yml \
+            .github/workflows/*.yml
+      - name: Check the generated web runner is valid JavaScript
+        run: |
+          set -euo pipefail
+          python skills/evergif/scripts/web_tape.py --name probe \
+            --steps 'goto /; wait #app' --out /tmp/probe.web.mjs
+          node --check /tmp/probe.web.mjs

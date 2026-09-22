@@ -32,6 +32,12 @@ def markers(name: str) -> tuple[str, str]:
 GENERIC_ALT = {"demo", "gif", "demo gif", "screenshot", "animation", "image", "evergif"}
 
 
+def weak_alt(alt: str) -> bool:
+    """True when alt text says nothing a screen reader user could use."""
+    cleaned = " ".join(alt.split())
+    return len(cleaned) < 15 or cleaned.lower().rstrip(".") in GENERIC_ALT
+
+
 def block(alt: str, src: str, name: str) -> str:
     start, end = markers(name)
     alt = " ".join(alt.split()).replace("[", "(").replace("]", ")")
@@ -114,7 +120,7 @@ def main() -> int:
                         help="print the block and the action, change nothing")
     args = parser.parse_args()
 
-    if len(args.alt.strip()) < 15 or args.alt.strip().lower() in GENERIC_ALT:
+    if weak_alt(args.alt):
         print("error: --alt must describe what the GIF shows (at least 15 characters)",
               file=sys.stderr)
         return 2

@@ -63,7 +63,9 @@ try {
   for (const step of config.steps) {
     switch (step.action) {
       case 'goto':
-        await page.goto(config.url + step.args[0], { waitUntil: 'networkidle' });
+        // 'load', not 'networkidle': a dev server's HMR socket or any polling
+        // request can keep the network busy forever. Follow goto with a wait.
+        await page.goto(config.url + step.args[0], { waitUntil: 'load' });
         break;
       case 'click':
         await page.click(step.args[0]);

@@ -214,6 +214,17 @@ rendering it with a write token and repository secrets — which is what
 `pull_request_target` would do — would hand any stranger who opens a pull
 request the keys to the repo. evergif never uses `pull_request_target`.
 
+## Contributing
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+
+23 tests cover the parts where a mistake is expensive: the safety policies that
+decide what may be recorded, and the README editing that runs against other
+people's files. CI runs them on Python 3.10 and 3.13, lints every generated
+workflow with actionlint, and re-renders both demos on every push.
+
 ## What's in this repo
 
 ```
@@ -225,6 +236,7 @@ skills/evergif/references/     tape cookbook, web demos, optimization, troublesh
 .gemini/skills/evergif    ->   ../../skills/evergif
 .claude-plugin/                Claude Code plugin + marketplace manifests
 examples/                      two CLI fixtures and one web app, all recorded by CI
+tests/                         run with: python3 -m unittest discover -s tests
 ```
 
 There is exactly one copy of the skill. Every agent path is a symlink to it.
