@@ -59,36 +59,54 @@ def wait_for(url: str, process: subprocess.Popen | None) -> None:
     sys.exit(f"error: {url} did not answer within {SERVE_TIMEOUT}s ({last})")
 
 
-def node_env() -> tuple[list[str], dict] | None:
-    """How to run node so that `import 'playwright'` resolves.
+def cache_dir() -> Path:
+    base = os.environ.get("XDG_CACHE_HOME") or (Path.home() / ".cache")
+    return Path(base) / "evergif" / "node"
 
-    Prefers a playwright already in the project, then npm's package cache. Both
-    avoid installing anything into the user's project.
+
+def node_env() -> dict | None:
+    """Environment in which the runner can resolve Playwright.
+
+    Uses the project's own Playwright when it has one. Otherwise installs it
+    into evergif's cache directory -- never into the user's project -- and
+    points NODE_PATH there, which is what `createRequire` in the generated
+    runner looks at.
     """
     env = os.environ.copy()
     probe = "console.log(require.resolve('playwright'))"
     try:
         local = subprocess.run(["node", "-e", probe], capture_output=True, text=True,
-                               timeout=30)
-        if local.returncode == 0 and local.stdout.strip():
-            return ["node"], env
+                               timeout=60)
     except (OSError, subprocess.TimeoutExpired):
+        print("error: Node 18+ is required for web demos (https://nodejs.org)",
+              file=sys.stderr)
         return None
-    fetched = subprocess.run(
-        ["npm", "exec", "--yes", f"--package=playwright@{PLAYWRIGHT_VERSION}", "--",
-         "node", "-e", probe],
-        capture_output=True, text=True, timeout=600)
-    if fetched.returncode != 0 or not fetched.stdout.strip():
-        return None
-    # .../node_modules/playwright/index.js -> .../node_modules
-    modules = Path(fetched.stdout.strip().splitlines()[-1]).parent.parent
+    if local.returncode == 0 and local.stdout.strip():
+        return env
+
+    cache = cache_dir()
+    modules = cache / "node_modules"
+    if not (modules / "playwright").is_dir():
+        print(f"+ fetching playwright@{PLAYWRIGHT_VERSION} into {cache} "
+              "(one time, not added to your project)", file=sys.stderr)
+        cache.mkdir(parents=True, exist_ok=True)
+        install = subprocess.run(
+            ["npm", "install", "--prefix", str(cache), "--no-audit", "--no-fund",
+             "--silent", f"playwright@{PLAYWRIGHT_VERSION}"], timeout=900)
+        if install.returncode != 0 or not (modules / "playwright").is_dir():
+            print("error: could not install Playwright; run with --docker instead",
+                  file=sys.stderr)
+            return None
     env["NODE_PATH"] = str(modules)
-    return ["node"], env
+    return env
 
 
 def ensure_browser(env: dict) -> None:
-    subprocess.run(["npx", "--yes", f"playwright@{PLAYWRIGHT_VERSION}", "install",
-                    "chromium"], env=env, check=False)
+    """Download the matching Chromium if it is not already cached."""
+    cli = cache_dir() / "node_modules" / ".bin" / "playwright"
+    command = [str(cli)] if cli.is_file() else ["npx", "--yes",
+                                                f"playwright@{PLAYWRIGHT_VERSION}"]
+    subprocess.run(command + ["install", "chromium"], env=env, check=False)
 
 
 def run_script(script: Path, cwd: Path, docker: bool) -> None:
@@ -98,13 +116,11 @@ def run_script(script: Path, cwd: Path, docker: bool) -> None:
                PLAYWRIGHT_IMAGE, "node", script.as_posix()]
         env = None
     else:
-        resolved = node_env()
-        if resolved is None:
-            sys.exit("error: could not resolve Playwright; install Node 18+ "
-                     "(https://nodejs.org) or run with --docker")
-        argv, env = resolved
+        env = node_env()
+        if env is None:
+            sys.exit("error: could not set up Playwright; see the message above")
         ensure_browser(env)
-        cmd = argv + [script.as_posix()]
+        cmd = ["node", script.as_posix()]
     print("+ " + " ".join(cmd), file=sys.stderr)
     if subprocess.run(cmd, cwd=cwd, env=env).returncode != 0:
         sys.exit(f"error: {script} failed; see the output above")
@@ -147,6 +163,7 @@ def render_one(script: Path, args: argparse.Namespace, cwd: Path) -> dict:
         sys.exit(f"error: no video at {webm}")
     digest = hashlib.sha256(transcript.read_bytes()).hexdigest() \
         if transcript.is_file() else "none"
+    transcript.unlink(missing_ok=True)  # the hash in the lock file is the record
 
     backup = gif.with_suffix(".gif.previous") if gif.is_file() else None
     if backup:
