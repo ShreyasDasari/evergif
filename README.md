@@ -194,6 +194,10 @@ it falls back to the official `ghcr.io/charmbracelet/vhs` Docker image. Only
 when Docker is unavailable too does it stop and print the exact install
 command for your OS.
 
+Web demos work the same way: evergif fetches Playwright into its own cache,
+never your project, and falls back to the official Playwright image on Linux
+hosts with no Node at all.
+
 In CI nothing is assumed either: the workflows install a pinned vhs, ttyd and
 ffmpeg themselves and run on a pinned `ubuntu-24.04` image, so a runner update
 cannot silently change how your GIFs look.

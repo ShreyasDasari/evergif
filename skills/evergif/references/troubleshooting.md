@@ -96,6 +96,15 @@ was edited), or a prompt from the user's own `PROMPT_COMMAND` (only happens if
   commands runnable on a clean Ubuntu runner. Re-run `ci.py` with the right
   setup lines.
 
+## Web demos
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `MODULE_NOT_FOUND: playwright` | no Node, or a project whose Playwright is not installed | evergif fetches it into `~/.cache/evergif`; if Node itself is missing, install it or use `--docker` on Linux |
+| `<url> did not answer within 90s` | the `serve` command never came up | run it by hand and check the port matches `--url` |
+| `waitForSelector` times out | the selector is wrong, or the element renders later | read the markup for the real selector, and `wait` before you act |
+| `--docker` cannot reach the app | Docker Desktop and Colima do not support `--network host` | use a Linux host, or install Node |
+
 ## Windows
 
 Symlinked skill directories need `git clone -c core.symlinks=true` plus

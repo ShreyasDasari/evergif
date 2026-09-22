@@ -56,6 +56,21 @@ as is: `--serve "npm run dev" --url http://localhost:5173`.
 the network busy indefinitely. Wait on a selector instead, which is what the
 step vocabulary is for.
 
+## No Node on the machine
+
+`render_web.py --docker` records with the official Playwright image instead.
+The image ships the browsers but not the npm package, so evergif installs the
+matching package inside the container into a writable prefix and points
+NODE_PATH at it; the browsers in `/ms-playwright` are used as they are.
+
+It needs a **Linux host**: the container reaches your dev server through
+`--network host`, which Docker Desktop and Colima do not provide. On macOS,
+install Node instead -- evergif fetches Playwright into `~/.cache/evergif`
+without touching your project.
+
+Verified on every change to the web scripts by the `web docker` workflow,
+which also fails if the recording comes out blank or frozen.
+
 ## Determinism
 
 The runner sets `reducedMotion: 'reduce'` and a fixed viewport and colour
