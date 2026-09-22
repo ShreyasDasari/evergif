@@ -120,10 +120,17 @@ def run_script(script: Path, cwd: Path, docker: bool) -> None:
         if hasattr(os, "getuid"):
             # Without this the recording lands in the repo owned by root.
             cmd += ["--user", f"{os.getuid()}:{os.getgid()}", "-e", "HOME=/tmp"]
-        # NODE_PATH must point at the image's global modules: require() does
-        # not search them on its own.
-        cmd += [PLAYWRIGHT_IMAGE, "sh", "-c",
-                f'export NODE_PATH="$(npm root -g)"; exec node {script.as_posix()}']
+        # The image ships the browsers, not the npm package, so fetch the
+        # matching package into a writable prefix and point NODE_PATH at it.
+        # The browsers are already in /ms-playwright; skip downloading them.
+        inner = (
+            "set -e; export HOME=/tmp PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1; "
+            f"npm install --prefix /tmp/pw --no-audit --no-fund --silent "
+            f"playwright@{PLAYWRIGHT_VERSION} >/dev/null; "
+            "export NODE_PATH=/tmp/pw/node_modules; "
+            f"exec node {script.as_posix()}"
+        )
+        cmd += [PLAYWRIGHT_IMAGE, "sh", "-c", inner]
         env = None
     else:
         env = node_env()
