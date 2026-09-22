@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Detect the evergif rendering toolchain and choose a render mode.
+"""Check that this machine can render evergif demos.
 
-Prints JSON to stdout:
-  mode: "local"  -> vhs, ttyd and ffmpeg are on PATH
-        "docker" -> something is missing, but Docker works (ghcr.io/charmbracelet/vhs)
-        "none"   -> neither; exact install commands are printed to stderr
-Exit code is 0 for local/docker and 1 for none.
+Prints JSON to stdout describing what is installed:
+  terminal: "ready" when vhs, ttyd and ffmpeg are present, else "missing"
+  web:      "ready" when Node is present (Playwright is fetched on demand)
+Exit code is 0 when terminal demos can be rendered, 1 otherwise; install
+commands for the detected OS are printed to stderr.
 """
 from __future__ import annotations
 
@@ -15,42 +15,32 @@ import shutil
 import subprocess
 import sys
 
-VHS_IMAGE = "ghcr.io/charmbracelet/vhs"
-REQUIRED = ("vhs", "ttyd", "ffmpeg")
+TERMINAL = ("vhs", "ttyd", "ffmpeg")
 OPTIONAL = ("gifsicle",)
 
 
-def docker_available() -> bool:
-    """True only if the docker CLI exists and the daemon answers."""
-    if not shutil.which("docker"):
-        return False
+def node_version() -> str | None:
+    if not shutil.which("node"):
+        return None
     try:
-        result = subprocess.run(
-            ["docker", "info", "--format", "{{.ServerVersion}}"],
-            capture_output=True, text=True, timeout=15,
-        )
+        result = subprocess.run(["node", "--version"], capture_output=True,
+                                text=True, timeout=15)
     except (OSError, subprocess.TimeoutExpired):
-        return False
-    return result.returncode == 0
+        return None
+    return result.stdout.strip() or None if result.returncode == 0 else None
 
 
 def detect() -> dict:
-    tools = {name: shutil.which(name) for name in REQUIRED + OPTIONAL}
-    docker = docker_available()
-    missing = [name for name in REQUIRED if not tools[name]]
-    if not missing:
-        mode = "local"
-    elif docker:
-        mode = "docker"
-    else:
-        mode = "none"
+    tools = {name: shutil.which(name) for name in TERMINAL + OPTIONAL}
+    missing = [name for name in TERMINAL if not tools[name]]
+    node = node_version()
     return {
-        "mode": mode,
+        "terminal": "missing" if missing else "ready",
+        "web": "ready" if node else "missing",
         "tools": tools,
-        "docker": docker,
+        "node": node,
         "missing": missing,
         "gifsicle": bool(tools["gifsicle"]),
-        "image": VHS_IMAGE,
     }
 
 
@@ -74,15 +64,15 @@ def install_commands() -> list[str]:
     if system == "Darwin":
         return ["brew install vhs gifsicle"]
     if system == "Windows":
-        return ["scoop install vhs gifsicle"]
+        return ["scoop install vhs gifsicle",
+                "# then run evergif from WSL or Git Bash: tapes use bash"]
     distro = linux_distro()
     if distro in ("debian", "ubuntu"):
         return [
-            "sudo mkdir -p /etc/apt/keyrings",
-            "curl -fsSL https://repo.charm.sh/apt/gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/charm.gpg",
-            'echo "deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *" | sudo tee /etc/apt/sources.list.d/charm.list',
-            "sudo apt update && sudo apt install -y vhs ffmpeg gifsicle",
-            "# ttyd: https://github.com/tsl0922/ttyd/releases (or: sudo apt install ttyd on Ubuntu 22.04+)",
+            "sudo apt install -y ffmpeg gifsicle ttyd",
+            "# vhs: download the .deb for your architecture from",
+            "#   https://github.com/charmbracelet/vhs/releases",
+            "#   then: sudo dpkg -i vhs_*.deb",
         ]
     if distro in ("fedora", "rhel"):
         return [
@@ -93,26 +83,26 @@ def install_commands() -> list[str]:
         return ["sudo pacman -S vhs gifsicle"]
     return [
         "go install github.com/charmbracelet/vhs@latest",
-        "# plus ttyd (https://github.com/tsl0922/ttyd) and ffmpeg from your package manager",
+        "# plus ttyd (https://github.com/tsl0922/ttyd) and ffmpeg",
     ]
 
 
 def main() -> int:
     report = detect()
     print(json.dumps(report, indent=2))
-    if report["mode"] == "docker":
-        print(f"note: using Docker fallback ({VHS_IMAGE}); missing: "
-              + ", ".join(report["missing"]), file=sys.stderr)
-    if report["mode"] == "none":
-        print("evergif needs vhs (with ttyd + ffmpeg) or Docker. Install vhs with:",
-              file=sys.stderr)
-        for cmd in install_commands():
-            print(f"  {cmd}", file=sys.stderr)
-        print("or install Docker: https://docs.docker.com/get-docker/", file=sys.stderr)
+    if report["terminal"] == "missing":
+        print("evergif needs vhs, ttyd and ffmpeg to record a terminal demo. "
+              f"Missing: {', '.join(report['missing'])}.", file=sys.stderr)
+        for command in install_commands():
+            print(f"  {command}", file=sys.stderr)
         return 1
     if not report["gifsicle"]:
         print("note: gifsicle not found; optimizing with ffmpeg instead "
               "(results are larger)", file=sys.stderr)
+    if report["web"] == "missing":
+        print("note: Node is not installed, so web demos are unavailable "
+              "(https://nodejs.org). Terminal demos are unaffected.",
+              file=sys.stderr)
     return 0
 
 

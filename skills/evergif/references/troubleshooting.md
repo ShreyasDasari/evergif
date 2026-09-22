@@ -1,8 +1,8 @@
 # Troubleshooting
 
-## doctor.py says `mode: none`
+## doctor.py says `terminal: missing`
 
-Neither vhs nor Docker is usable. `doctor.py` prints install commands for the
+vhs, ttyd or ffmpeg is missing. `doctor.py` prints install commands for the
 detected OS. Show them to the user and stop; don't install system packages on
 their behalf.
 
@@ -15,7 +15,7 @@ macOS is one line: `brew install vhs gifsicle` (vhs brings ttyd and ffmpeg).
 | `Error: unknown theme` | theme name typo | `vhs themes` lists valid names |
 | Hangs, then a `Wait` timeout | the command never returned to the prompt (interactive, or waiting on input) | pick a non-interactive command, or write a TUI tape by hand (see the cookbook) |
 | `command not found` in the GIF | the tool isn't on PATH inside the tape's shell | `--path-add bin`, or record the explicit invocation (`python3 cli.py`) |
-| Blank or black GIF | ttyd could not start | check `ttyd --version`; on Linux the Docker fallback avoids it |
+| Blank or black GIF | ttyd could not start | check `ttyd --version` and that nothing else holds its port |
 | Fonts look wrong | the font isn't installed | stick to the default (JetBrains Mono ships in the Docker image and in vhs-action) |
 
 ## vhs exits 0 but writes no GIF
@@ -37,25 +37,6 @@ Because the encode can happen in either place, evergif's tapes do not use
 ffmpeg stage, so a tape that used them would look different depending on which
 encoder ran.
 
-## Docker fallback caveats
-
-`render.py` mounts the project at `/vhs` inside `ghcr.io/charmbracelet/vhs`.
-Everything the demo runs must exist **inside the container**:
-
-- A bash script fixture works.
-- A Python or Node CLI needs that runtime in the image. If `python3` is not
-  there, the recorded command fails on camera. Check with
-  `docker run --rm --entrypoint python3 ghcr.io/charmbracelet/vhs --version`.
-  If it is missing, install vhs locally instead.
-- On Linux, files written by the container are owned by root. Fix with
-  `sudo chown "$USER" demo/evergif.gif`, or install vhs locally.
-- The container has no access to the host's environment variables, which is
-  a safety feature, not a bug.
-- **Known failure: Colima on Apple Silicon.** The image's chromium captures
-  zero frames there and vhs still exits 0, with no error on either stream.
-  `--shm-size`, `--ipc=host` and `--cap-add=SYS_ADMIN` make no difference.
-  `render.py` fails loudly, keeps your previous GIF, and points here. Install
-  vhs locally (`brew install vhs`) or use Docker Desktop instead.
 
 ## The GIF renders but looks wrong
 

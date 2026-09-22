@@ -189,14 +189,13 @@ output actually changed, not all of them.
 
 ### Zero setup
 
-evergif checks for `vhs`, `ttyd`, `ffmpeg` and `gifsicle`. If any are missing
-it falls back to the official `ghcr.io/charmbracelet/vhs` Docker image. Only
-when Docker is unavailable too does it stop and print the exact install
-command for your OS.
+Terminal demos need `vhs` (plus `ttyd` and `ffmpeg`); on macOS that is
+`brew install vhs gifsicle`. evergif checks first and prints the exact command
+for your OS rather than failing halfway through.
 
-Web demos work the same way: evergif fetches Playwright into its own cache,
-never your project, and falls back to the official Playwright image on Linux
-hosts with no Node at all.
+Web demos need nothing but Node: evergif fetches Playwright and its browser
+into its own cache, never into your project. On a Linux host with no Node at
+all, `--docker` records with the official Playwright image instead.
 
 In CI nothing is assumed either: the workflows install a pinned vhs, ttyd and
 ffmpeg themselves and run on a pinned `ubuntu-24.04` image, so a runner update

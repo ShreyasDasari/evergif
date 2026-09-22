@@ -197,7 +197,7 @@ def render_one(script: Path, args: argparse.Namespace, cwd: Path) -> dict:
     if not args.keep_webm:
         webm.unlink(missing_ok=True)
 
-    result = optimize(gif, cwd, int(args.target_mb * MB), docker=False)
+    result = optimize(gif, cwd, int(args.target_mb * MB))
     lock.write_text(digest, encoding="utf-8")
     result.update({"demo": name, "script": script.as_posix(), "gif": gif.as_posix(),
                    "mb": round(result["bytes"] / MB, 2),

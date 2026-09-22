@@ -2,9 +2,9 @@
 name: evergif
 description: Generate reproducible demo GIFs for a README and keep them fresh in CI. Records terminal demos of CLI and TUI projects with vhs, and browser demos of web apps with Playwright, then optimizes each GIF and embeds it in README.md between evergif markers. Use when the user says "run evergif", "/evergif", "add a demo gif to my README", "record a terminal demo", "record a demo of my web app", "make a GIF of my CLI", "update the README gif", or wants their README demos to stop going stale.
 license: MIT
-compatibility: Requires Python 3.10+ and either vhs (with ttyd and ffmpeg) or Docker. Web demos also need Node 18+ and Playwright, which evergif fetches on demand.
+compatibility: Requires Python 3.10+ and vhs (with ttyd and ffmpeg) for terminal demos. Web demos need Node 18+; Playwright is fetched on demand.
 metadata:
-  version: "0.2.1"
+  version: "0.3.0"
   homepage: https://github.com/ShreyasDasari/evergif
 ---
 
@@ -48,9 +48,9 @@ Everything else (naming, embedding, CI) is identical.
 python3 "$SKILL_DIR/scripts/doctor.py"
 ```
 
-It prints JSON with `mode`: `local` (vhs installed), `docker` (falls back to
-`ghcr.io/charmbracelet/vhs`), or `none`. On `none`, stop and show the user the
-install commands it printed. Do not install system packages yourself.
+It prints JSON with `terminal: ready|missing` and `web: ready|missing`. If the
+one you need is `missing`, stop and show the user the install commands it
+printed. Do not install system packages yourself.
 
 ### 2. Pick the commands
 
@@ -99,8 +99,8 @@ one, pick a different command; never work around the check.
 python3 "$SKILL_DIR/scripts/render.py" [--name NAME]   # or --all for every demo
 ```
 
-It renders with local vhs or Docker (per step 1), then optimizes to under 2 MB
-when possible and fails if the GIF is over 5 MB. If rendering fails or the
+It renders with vhs, then optimizes to under 2 MB when possible and fails if
+the GIF is over 5 MB. If rendering fails or the
 GIF looks wrong (errors on screen, cut-off output), fix the tape and re-run.
 See [references/optimization.md](references/optimization.md) and
 [references/troubleshooting.md](references/troubleshooting.md).

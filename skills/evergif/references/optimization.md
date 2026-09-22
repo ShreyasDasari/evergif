@@ -33,9 +33,8 @@ target wins; otherwise the smallest result is kept.
 `--no-comments --no-names --no-extensions` strips metadata, which also makes
 renders byte-comparable.
 
-**Without gifsicle** (ffmpeg, local or from the vhs Docker image): the same
-idea with a generated palette, dropping framerate first (24 → 15 → 12 → 10 → 8),
-then colors, then scale. `stats_mode=diff` builds the palette from what changes
+**Without gifsicle** (ffmpeg): the same idea with a generated palette, dropping
+framerate first (24 → 15 → 12 → 10 → 8), then colors, then scale. `stats_mode=diff` builds the palette from what changes
 between frames, which suits terminal output; `diff_mode=rectangle` only redraws
 changed regions.
 
