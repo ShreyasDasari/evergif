@@ -90,6 +90,23 @@ Type "q"            # always quit, or the render hangs until the timeout
 Use `Sleep`, not `Wait`, inside a TUI: the shell prompt never comes back until
 it exits.
 
+## Several demos in one README
+
+Each demo is a name, and a name is a feature: `install`, `query`, `watch-mode`.
+Keep the default `evergif` demo as the one that shows what the tool is, and add
+named demos for flows that deserve their own GIF.
+
+```bash
+tape.py --name install --commands "..." --height 260
+render.py --name install
+embed.py --name install --alt "..."
+```
+
+Prefer two focused demos over one long one: a 30-second GIF that covers three
+features is worse than three 8-second GIFs a reader can find. Check
+`demo/*.tape` before choosing a name so you extend a demo instead of
+overwriting an unrelated one.
+
 ## Commands that are always refused
 
 `tape.py` rejects these, and no flag overrides it: deletes and writes

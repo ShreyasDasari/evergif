@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Render demo/evergif.tape with vhs (local or Docker) and optimize the GIF.
 
-Usage: render.py [--tape demo/evergif.tape] [--mode auto|local|docker]
+Usage: render.py [--name NAME | --tape PATH | --all] [--mode auto|local|docker]
                  [--target-mb 2] [--max-mb 5] [--skip-render]
 
 Optimization tries progressively stronger settings until the GIF is under
@@ -196,27 +196,8 @@ def optimize(gif: Path, cwd: Path, target: int, docker: bool) -> dict:
             "settings": dict(zip(keys, used)) if used else "kept original"}
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--tape", default="demo/evergif.tape")
-    parser.add_argument("--mode", choices=("auto", "local", "docker"), default="auto")
-    parser.add_argument("--target-mb", type=float, default=2.0)
-    parser.add_argument("--max-mb", type=float, default=5.0)
-    parser.add_argument("--skip-render", action="store_true",
-                        help="only optimize an existing GIF")
-    args = parser.parse_args()
-
-    cwd = Path.cwd().resolve()
-    tape = Path(args.tape)
-    if not tape.is_file():
-        sys.exit(f"error: {tape} not found (run tape.py first)")
-    report = detect()
-    mode = report["mode"] if args.mode == "auto" else args.mode
-    if mode == "none":
-        sys.exit("error: no vhs and no Docker; run doctor.py for install commands")
-    if mode == "docker" and not report["docker"]:
-        sys.exit("error: --mode docker but Docker is not running")
-
+def render_one(tape: Path, args: argparse.Namespace, report: dict, mode: str,
+               cwd: Path) -> dict:
     gif = output_path(tape)
     method = mode
     if not args.skip_render:
@@ -239,17 +220,61 @@ def main() -> int:
     if not gif.is_file():
         sys.exit(f"error: vhs did not produce {gif}")
 
+
     result = optimize(gif, cwd, int(args.target_mb * MB), report["docker"])
-    result.update({"gif": gif.as_posix(), "mode": method,
+    result.update({"demo": tape.stem, "tape": tape.as_posix(),
+                   "gif": gif.as_posix(), "mode": method,
                    "mb": round(result["bytes"] / MB, 2),
-                   "under_target": result["bytes"] <= args.target_mb * MB})
-    print(json.dumps(result, indent=2))
-    if result["bytes"] > args.max_mb * MB:
-        print(f"error: {gif} is {result['mb']} MB (limit {args.max_mb} MB); "
+                   "under_target": result["bytes"] <= args.target_mb * MB,
+                   "over_limit": result["bytes"] > args.max_mb * MB})
+    return result
+
+
+def demo_tapes(root: Path) -> list[Path]:
+    """Every committed demo tape, skipping evergif's own temporary files."""
+    return sorted(p for p in (root / "demo").glob("*.tape")
+                  if not p.name.startswith("."))
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--tape", default=None, help="default: demo/<name>.tape")
+    parser.add_argument("--name", default=None, help="demo name to render")
+    parser.add_argument("--all", action="store_true",
+                        help="render every tape in demo/")
+    parser.add_argument("--mode", choices=("auto", "local", "docker"), default="auto")
+    parser.add_argument("--target-mb", type=float, default=2.0)
+    parser.add_argument("--max-mb", type=float, default=5.0)
+    parser.add_argument("--skip-render", action="store_true",
+                        help="only optimize an existing GIF")
+    args = parser.parse_args()
+
+    cwd = Path.cwd().resolve()
+    if args.all:
+        tapes = demo_tapes(cwd)
+        if not tapes:
+            sys.exit("error: no tapes in demo/ (run tape.py first)")
+    else:
+        name = args.name or "evergif"
+        tapes = [Path(args.tape) if args.tape else Path("demo") / f"{name}.tape"]
+        if not tapes[0].is_file():
+            sys.exit(f"error: {tapes[0]} not found (run tape.py first)")
+
+    report = detect()
+    mode = report["mode"] if args.mode == "auto" else args.mode
+    if mode == "none":
+        sys.exit("error: no vhs and no Docker; run doctor.py for install commands")
+    if mode == "docker" and not report["docker"]:
+        sys.exit("error: --mode docker but Docker is not running")
+
+    results = [render_one(tape, args, report, mode, cwd) for tape in tapes]
+    print(json.dumps(results if args.all else results[0], indent=2))
+    oversized = [r for r in results if r["over_limit"]]
+    for result in oversized:
+        print(f"error: {result['gif']} is {result['mb']} MB (limit {args.max_mb} MB); "
               "shorten the tape (fewer commands, shorter --pause, smaller output)",
               file=sys.stderr)
-        return 1
-    return 0
+    return 1 if oversized else 0
 
 
 if __name__ == "__main__":

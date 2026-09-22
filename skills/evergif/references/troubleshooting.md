@@ -69,7 +69,11 @@ was edited), or a prompt from the user's own `PROMPT_COMMAND` (only happens if
 - `error: found 2 start and 1 end markers` — the README has a broken marker
   pair. Fix it by hand; `embed.py` will not guess.
 - The block landed in an odd place — move it anywhere you like. `embed.py`
-  updates it where it is; placement is only chosen on first insert.
+  updates it where it is; placement is only chosen on first insert. A new named
+  demo is added after the last existing evergif block, so demos stay together.
+- `error: found 1 start and 0 end markers for demo 'install'` — the named pair
+  is incomplete. Named demos use `<!-- evergif:start:install -->` and
+  `<!-- evergif:end:install -->`; the default demo uses the bare markers.
 - Relative path — the `src` is computed relative to the README, so a README in
   `docs/` gets `../demo/evergif.gif`.
 
@@ -83,8 +87,11 @@ was edited), or a prompt from the user's own `PROMPT_COMMAND` (only happens if
   looks like a change every time. Re-run evergif with a stable command.
 - **The first run after adding the workflow opens one PR.** It creates
   `demo/evergif.lock`. Merge it; later runs stay quiet until the CLI changes.
-- **`demo/evergif.lock` is not optional.** It is the record of what the GIF
+- **`demo/<name>.lock` is not optional.** It is the record of what that demo
   shows. Commit it alongside the GIF.
+- **A demo re-renders when a different demo changed.** Each demo has its own
+  lock, so this means both demos really do show the changed output. Narrow one
+  of them to commands that do not overlap.
 - **The workflow fails at the setup step.** `--setup` must make the recorded
   commands runnable on a clean Ubuntu runner. Re-run `ci.py` with the right
   setup lines.

@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """Insert or update the evergif GIF embed in a README.
 
-Usage: embed.py --alt "What the GIF shows" [--readme README.md]
-                [--gif demo/evergif.gif] [--dry-run]
+Usage: embed.py --alt "What the GIF shows" [--name NAME] [--readme README.md]
+                [--gif PATH] [--dry-run]
 
-The embed lives between <!-- evergif:start --> and <!-- evergif:end -->.
-If the markers exist, only the text between them is replaced. Otherwise the
-block is inserted after the README's title and first paragraph (or at the top
-if there is no title). Running it twice never duplicates the block.
+The default demo lives between <!-- evergif:start --> and <!-- evergif:end -->.
+Any other demo uses named markers, e.g. <!-- evergif:start:install -->, so one
+README can hold several demos. If the markers exist, only the text between them
+is replaced; otherwise the block is added after the last existing evergif block,
+or after the title. Running it twice never duplicates a block.
 """
 from __future__ import annotations
 
@@ -17,14 +18,24 @@ import re
 import sys
 from pathlib import Path
 
-START = "<!-- evergif:start -->"
-END = "<!-- evergif:end -->"
+DEFAULT_NAME = "evergif"
+NAME_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,39}$")
+# The default demo keeps v0.1's bare markers; extra demos are named.
+ANY_END = re.compile(r"<!-- evergif:end(?::[a-z0-9-]+)? -->")
+
+
+def markers(name: str) -> tuple[str, str]:
+    suffix = "" if name == DEFAULT_NAME else f":{name}"
+    return (f"<!-- evergif:start{suffix} -->", f"<!-- evergif:end{suffix} -->")
+
+
 GENERIC_ALT = {"demo", "gif", "demo gif", "screenshot", "animation", "image", "evergif"}
 
 
-def block(alt: str, src: str) -> str:
+def block(alt: str, src: str, name: str) -> str:
+    start, end = markers(name)
     alt = " ".join(alt.split()).replace("[", "(").replace("]", ")")
-    return f"{START}\n![{alt}]({src})\n{END}"
+    return f"{start}\n![{alt}]({src})\n{end}"
 
 
 def insertion_index(lines: list[str]) -> int:
@@ -55,13 +66,24 @@ def marker_positions(text: str, marker: str) -> list[re.Match]:
             if not any(lo <= m.start() < hi for lo, hi in spans)]
 
 
-def update(text: str, new_block: str) -> tuple[str, str]:
-    starts = marker_positions(text, START)
-    ends = marker_positions(text, END)
+def last_block_line(text: str) -> int | None:
+    """Line after the last evergif block of any name, so demos stay together."""
+    spans = fenced_spans(text)
+    ends = [m for m in ANY_END.finditer(text)
+            if not any(lo <= m.start() < hi for lo, hi in spans)]
+    if not ends:
+        return None
+    return text[:ends[-1].end()].count("\n") + 1
+
+
+def update(text: str, new_block: str, name: str) -> tuple[str, str]:
+    start_marker, end_marker = markers(name)
+    starts = marker_positions(text, start_marker)
+    ends = marker_positions(text, end_marker)
     if len(starts) != len(ends) or len(starts) > 1:
         raise ValueError(f"found {len(starts)} start and {len(ends)} end markers "
-                         "outside code blocks; expected exactly one pair "
-                         "(fix the README by hand)")
+                         f"for demo {name!r} outside code blocks; expected exactly "
+                         "one pair (fix the README by hand)")
     newline = "\r\n" if "\r\n" in text else "\n"
     if starts:
         if ends[0].start() < starts[0].start():
@@ -69,7 +91,9 @@ def update(text: str, new_block: str) -> tuple[str, str]:
         return (text[:starts[0].start()] + new_block.replace("\n", newline)
                 + text[ends[0].end():]), "updated"
     lines = text.splitlines()
-    index = insertion_index(lines)
+    index = last_block_line(text)
+    if index is None:
+        index = insertion_index(lines)
     before = [""] if index and lines[index - 1].strip() else []
     after = [""] if index < len(lines) and lines[index].strip() else []
     lines[index:index] = before + new_block.split("\n") + after
@@ -83,7 +107,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--alt", required=True, help="real alt text describing the GIF")
     parser.add_argument("--readme", default="README.md")
-    parser.add_argument("--gif", default="demo/evergif.gif")
+    parser.add_argument("--name", default=DEFAULT_NAME,
+                        help="demo name; a README may hold several demos")
+    parser.add_argument("--gif", default=None, help="default: demo/<name>.gif")
     parser.add_argument("--dry-run", action="store_true",
                         help="print the block and the action, change nothing")
     args = parser.parse_args()
@@ -92,16 +118,21 @@ def main() -> int:
         print("error: --alt must describe what the GIF shows (at least 15 characters)",
               file=sys.stderr)
         return 2
-    readme, gif = Path(args.readme), Path(args.gif)
+    if not NAME_RE.match(args.name):
+        print(f"error: --name must be lowercase letters, numbers and hyphens: "
+              f"{args.name!r}", file=sys.stderr)
+        return 2
+    readme = Path(args.readme)
+    gif = Path(args.gif) if args.gif else Path("demo") / f"{args.name}.gif"
     src = Path(os.path.relpath(gif, readme.parent)).as_posix()
-    new_block = block(args.alt, src)
+    new_block = block(args.alt, src, args.name)
     if readme.is_file():
         with open(readme, encoding="utf-8", newline="") as fh:
             text = fh.read()
     else:
         text = f"# {Path.cwd().name}\n"
     try:
-        updated, action = update(text, new_block)
+        updated, action = update(text, new_block, args.name)
     except ValueError as exc:
         print(f"error: {readme}: {exc}", file=sys.stderr)
         return 2
@@ -111,11 +142,11 @@ def main() -> int:
         print(f"(dry run: would have {action} this block in {readme})")
         return 0
     if updated == text:
-        print(f"{readme}: embed already up to date")
+        print(f"{readme}: embed '{args.name}' already up to date")
         return 0
     with open(readme, "w", encoding="utf-8", newline="") as fh:
         fh.write(updated)
-    print(f"{readme}: {action} evergif embed ({src})")
+    print(f"{readme}: {action} evergif embed '{args.name}' ({src})")
     return 0
 
 

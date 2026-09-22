@@ -24,8 +24,16 @@ All optional. Parse them from the user's request, in any wording.
 | Option | Meaning | Default |
 |---|---|---|
 | `--commands "a; b"` | Exact commands to record (1–3, `;`-separated) | You pick them in step 2 |
+| `--name NAME` | Which demo to write; a README can hold several | `evergif` |
 | `--theme NAME` | Any theme from `vhs themes` | `Catppuccin Mocha` |
 | `--ci` | Also add `.github/workflows/evergif.yml` | off |
+
+**Several demos in one README.** Each demo is a name: `demo/<name>.tape`,
+`demo/<name>.gif`, and its own marker pair. Use one when the user asks for a
+demo of a particular feature ("add a gif showing the install flow" →
+`--name install`), and keep the default `evergif` for the main demo. Pass
+`--name` to steps 3 and 5. Never overwrite an existing demo with unrelated
+content: list `demo/*.tape` first and pick a new name if none fits.
 
 ## Workflow
 
@@ -67,10 +75,10 @@ per project type.
 
 ```bash
 python3 "$SKILL_DIR/scripts/tape.py" --commands "cmd one; cmd two" \
-  --height PIXELS [--theme "NAME"] [--path-add DIR]
+  --height PIXELS [--name NAME] [--theme "NAME"] [--path-add DIR]
 ```
 
-This writes `demo/evergif.tape`. Set `--height` from the **tallest** output you
+This writes `demo/<name>.tape`. Set `--height` from the **tallest** output you
 are recording: `rows x 21 + 90`, where `rows` counts the command line plus its
 output lines (step 2 reports them). A 10-line help output is about 300; the
 default 500 leaves dead space under short output, which looks broken in a
@@ -83,7 +91,7 @@ one, pick a different command; never work around the check.
 ### 4. Render and optimize
 
 ```bash
-python3 "$SKILL_DIR/scripts/render.py"
+python3 "$SKILL_DIR/scripts/render.py" [--name NAME]   # or --all for every demo
 ```
 
 It renders with local vhs or Docker (per step 1), then optimizes to under 2 MB
@@ -95,14 +103,14 @@ See [references/optimization.md](references/optimization.md) and
 ### 5. Embed in the README
 
 ```bash
-python3 "$SKILL_DIR/scripts/embed.py" --alt "ALT TEXT"
+python3 "$SKILL_DIR/scripts/embed.py" --alt "ALT TEXT" [--name NAME]
 ```
 
 Write real alt text that describes what the GIF shows, e.g. `Terminal demo:
 greet --help lists the hello and bye subcommands, then greet hello --name Ada
-prints a greeting`. It inserts or replaces the block between
-`<!-- evergif:start -->` and `<!-- evergif:end -->`. Re-running updates the
-block in place and never duplicates it.
+prints a greeting`. It inserts or replaces the block between `<!-- evergif:start -->` and
+`<!-- evergif:end -->` (or `:NAME` markers for a named demo). Re-running
+updates that block in place and never duplicates it.
 
 ### 6. CI freshness (only with `--ci`)
 
@@ -114,14 +122,15 @@ python3 "$SKILL_DIR/scripts/ci.py" --setup "SETUP COMMAND"
 runner (e.g. `pip install -e .`, `npm ci`, `go build ./...`). Repeat the flag
 for several steps, or omit it if nothing is needed.
 
-The workflow re-runs the recorded commands, hashes their output against
-`demo/evergif.lock`, and re-renders and opens a PR only when that output
-changed. Tell the user to enable **Settings → Actions → General → Allow GitHub
+The workflow covers every demo in `demo/`. It re-runs each demo's recorded
+commands, hashes the output against `demo/<name>.lock`, and re-renders and
+opens one PR for only the demos whose output changed. Tell the user to enable **Settings → Actions → General → Allow GitHub
 Actions to create and approve pull requests**, and that the first run creates
 the lock file, so it opens one PR.
 
 ### 7. Report
 
 Tell the user the chosen commands, the GIF path and size, and the README
-change. Suggest committing `demo/evergif.tape`, `demo/evergif.gif`, and
-`README.md` (plus the workflow, if added). Don't commit unless asked.
+change. Suggest committing `demo/<name>.tape`, `demo/<name>.gif`, and
+`README.md` (plus the workflow and `demo/<name>.lock`, if added). Don't commit
+unless asked.

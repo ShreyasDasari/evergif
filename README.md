@@ -110,6 +110,7 @@ the README gif"* — or use the options:
 | Option | What it does | Default |
 |---|---|---|
 | `--commands "a; b"` | Record exactly these commands (1–3) | the agent picks them |
+| `--name NAME` | Which demo to write, so one README can hold several | `evergif` |
 | `--theme NAME` | Any theme from `vhs themes` | `Catppuccin Mocha` |
 | `--ci` | Also add `.github/workflows/evergif.yml` | off |
 
@@ -123,6 +124,21 @@ README.md             an embed between <!-- evergif:start --> / <!-- evergif:end
 ```
 
 Re-running evergif updates the marker block in place. It never adds a second one.
+
+### More than one demo
+
+Ask for a demo of a specific feature and it becomes its own named demo:
+*"add a gif showing the install flow"* writes `demo/install.tape`,
+`demo/install.gif`, and its own marker pair:
+
+```
+<!-- evergif:start:install -->
+![Installing mytool in one command](demo/install.gif)
+<!-- evergif:end:install -->
+```
+
+Each demo carries its own lock file, so CI re-renders **only** the demos whose
+output actually changed, not all of them.
 
 ### Zero setup
 
@@ -142,11 +158,11 @@ credentials, or paths inside your home directory. It records `--help`,
 ## How freshness works
 
 With `--ci`, evergif adds a workflow that runs on every push to your default
-branch, weekly, and on demand. It re-runs the exact commands the GIF shows and
-hashes their output. If the output is byte-identical to the hash in
-`demo/evergif.lock`, the GIF is still accurate: the job stops there, with no
-render and no PR. When the output changes, it re-renders the tape, optimizes
-the GIF, and opens a pull request.
+branch, weekly, and on demand. For each demo it re-runs the exact commands that
+demo shows and hashes their output. If the output is byte-identical to the hash
+in `demo/<name>.lock`, that GIF is still accurate and nothing is rendered. Only
+the demos whose output changed are re-rendered, and they land in one pull
+request together.
 
 Comparing output rather than pixels is deliberate. Terminal recordings are not
 frame-identical between runs (capture timing jitters by a frame or two), so a

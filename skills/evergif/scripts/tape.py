@@ -18,6 +18,8 @@ import sys
 from pathlib import Path
 
 DEFAULT_THEME = "Catppuccin Mocha"
+DEFAULT_NAME = "evergif"
+NAME_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,39}$")
 MAX_COMMANDS = 3
 
 
@@ -156,8 +158,10 @@ def main() -> int:
     parser.add_argument("--theme", default=DEFAULT_THEME)
     parser.add_argument("--path-add", action="append", default=[],
                         metavar="DIR", help="project dir to prepend to PATH (repeatable)")
-    parser.add_argument("--out", default="demo/evergif.tape")
-    parser.add_argument("--gif", default="demo/evergif.gif")
+    parser.add_argument("--name", default=DEFAULT_NAME,
+                        help="demo name; a README may hold several demos")
+    parser.add_argument("--out", default=None, help="default: demo/<name>.tape")
+    parser.add_argument("--gif", default=None, help="default: demo/<name>.gif")
     parser.add_argument("--height", type=int, default=500,
                         help="window height in px; about 22px per output row")
     parser.add_argument("--pause", type=float, default=3.0,
@@ -165,6 +169,13 @@ def main() -> int:
     parser.add_argument("--stdout", action="store_true",
                         help="print the tape instead of writing it")
     args = parser.parse_args()
+
+    if not NAME_RE.match(args.name):
+        print(f"error: --name must be lowercase letters, numbers and hyphens: "
+              f"{args.name!r}", file=sys.stderr)
+        return 2
+    out = Path(args.out) if args.out else Path("demo") / f"{args.name}.tape"
+    gif = args.gif or (Path("demo") / f"{args.name}.gif").as_posix()
 
     commands = split_commands(args.commands)
     if not 1 <= len(commands) <= MAX_COMMANDS:
@@ -185,7 +196,7 @@ def main() -> int:
         return 2
 
     try:
-        tape = build(commands, args.theme, args.gif, args.path_add, args.pause,
+        tape = build(commands, args.theme, gif, args.path_add, args.pause,
                      args.height)
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
@@ -193,7 +204,6 @@ def main() -> int:
     if args.stdout:
         sys.stdout.write(tape)
         return 0
-    out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(tape, encoding="utf-8")
     print(f"wrote {out} ({len(commands)} command{'s' * (len(commands) > 1)})")
