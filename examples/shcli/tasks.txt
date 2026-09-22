@@ -1,0 +1,5 @@
+[x] write the tape generator
+[x] add a safety check for recorded commands
+[ ] render the demo GIF under 2 MB
+[ ] wire up the freshness workflow
+[ ] dogfood evergif on evergif

@@ -1,0 +1,4 @@
+# Symlinks to the canonical skill: never normalize line endings
+.claude/skills/evergif -text
+.agents/skills/evergif -text
+.gemini/skills/evergif -text

@@ -1,0 +1,15 @@
+{
+  "name": "evergif",
+  "description": "evergif: keep your README's terminal demo GIF fresh, in any coding agent.",
+  "owner": {
+    "name": "Shreyas Dasari",
+    "url": "https://github.com/ShreyasDasari"
+  },
+  "plugins": [
+    {
+      "name": "evergif",
+      "source": "./",
+      "description": "Your README demo that never goes stale: record a terminal demo GIF and keep it fresh in CI."
+    }
+  ]
+}

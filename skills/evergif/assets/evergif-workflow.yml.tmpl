@@ -1,0 +1,96 @@
+name: evergif
+
+on:
+  push:
+    branches: [__EVERGIF_BRANCH__]
+    paths-ignore:
+      - '__EVERGIF_GIF__'
+  schedule:
+    - cron: '__EVERGIF_CRON__'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: evergif-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  render:
+    name: Refresh the demo GIF if the CLI changed
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up the project
+        run: |
+__EVERGIF_SETUP__
+
+      - name: Has the recorded output changed?
+        id: check
+        run: |
+          set -uo pipefail
+          tape='__EVERGIF_TAPE__'
+          # The commands the GIF shows: Type lines outside a Hide/Show block.
+          commands=$(awk '
+            /^Hide$/ {hidden = 1; next}
+            /^Show$/ {hidden = 0; next}
+            !hidden && /^Type / {
+              line = substr($0, 6)
+              print substr(line, 2, length(line) - 2)
+            }' "$tape")
+          # Honour a PATH prefix that evergif put in the tape (--path-add).
+          path_add=$(grep -o 'PATH="[^"]*"' "$tape" | head -n 1 || true)
+          if [ -n "$path_add" ]; then eval "export $path_add"; fi
+          transcript=$(while IFS= read -r command; do
+            [ -z "$command" ] && continue
+            printf '$ %s\n' "$command"
+            bash -c "$command" 2>&1
+          done <<< "$commands")
+          echo "$transcript"
+          new=$(printf '%s' "$transcript" | sha256sum | cut -d' ' -f1)
+          old=$(cat demo/evergif.lock 2>/dev/null || echo none)
+          printf '%s' "$new" > demo/evergif.lock
+          if [ "$old" = "$new" ] && [ -f '__EVERGIF_GIF__' ]; then
+            echo 'Recorded output is unchanged; the GIF is still accurate.'
+            echo 'stale=false' >> "$GITHUB_OUTPUT"
+          else
+            echo "Recorded output changed ($old -> $new); re-rendering."
+            echo 'stale=true' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Render the tape
+        if: steps.check.outputs.stale == 'true'
+        uses: charmbracelet/vhs-action@v2
+        with:
+          path: '__EVERGIF_TAPE__'
+
+      - name: Optimize the GIF
+        if: steps.check.outputs.stale == 'true'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq gifsicle
+          gifsicle -O3 --lossy=80 --colors 128 --no-comments --no-names \
+            --no-extensions -b '__EVERGIF_GIF__'
+          ls -lh '__EVERGIF_GIF__'
+
+      - name: Open a pull request
+        if: steps.check.outputs.stale == 'true'
+        uses: peter-evans/create-pull-request@v8
+        with:
+          branch: evergif/update
+          delete-branch: true
+          add-paths: |
+            __EVERGIF_GIF__
+            demo/evergif.lock
+          commit-message: 'chore(evergif): refresh the demo GIF'
+          title: 'evergif: refresh the demo GIF'
+          body: |
+            The commands in the README demo now print something different, so
+            the GIF no longer matches the CLI.
+
+            Re-rendered from `__EVERGIF_TAPE__` by the evergif workflow.
+            Review the GIF and merge to keep the README current.
+          labels: evergif

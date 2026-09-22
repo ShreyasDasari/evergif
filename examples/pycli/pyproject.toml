@@ -1,0 +1,8 @@
+[project]
+name = "greet"
+version = "0.1.0"
+description = "A tiny argparse CLI used as an evergif test fixture."
+requires-python = ">=3.10"
+
+[project.scripts]
+greet = "greet:main"
