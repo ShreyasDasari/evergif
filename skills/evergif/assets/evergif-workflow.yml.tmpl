@@ -119,13 +119,15 @@ __EVERGIF_SETUP__
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          if git diff --quiet -- demo/; then
+          git config user.name 'evergif'
+          git config user.email 'evergif@users.noreply.github.com'
+          # Stage first: `git diff` alone ignores untracked files, so a brand
+          # new demo's first GIF would look like "nothing to commit".
+          git add demo/
+          if git diff --cached --quiet; then
             echo 'Rendered output is identical to what is committed.'
             exit 0
           fi
-          git config user.name 'evergif'
-          git config user.email 'evergif@users.noreply.github.com'
-          git add demo/
           git commit -m 'chore(evergif): refresh demo GIFs [skip ci]'
           if git push origin "HEAD:$TARGET" 2>/dev/null; then
             echo "Refreshed the demo GIFs on \`$TARGET\`." >> "$GITHUB_STEP_SUMMARY"
@@ -271,13 +273,13 @@ __EVERGIF_SETUP__
           TARGET: ${{ github.ref_name }}
         run: |
           set -euo pipefail
-          if git diff --quiet -- demo/; then
-            echo 'Nothing to commit.'
-            exit 0
-          fi
           git config user.name 'evergif'
           git config user.email 'evergif@users.noreply.github.com'
           git add demo/
+          if git diff --cached --quiet; then
+            echo 'Nothing to commit.'
+            exit 0
+          fi
           git commit -m 'chore(evergif): refresh web demo GIFs [skip ci]'
           git push origin "HEAD:$TARGET"
   #web>>

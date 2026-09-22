@@ -119,13 +119,14 @@ jobs:
            github.event.pull_request.head.repo.full_name == github.repository)
         run: |
           set -euo pipefail
-          if git diff --quiet -- 'demo/*.gif'; then
+          git config user.name 'evergif'
+          git config user.email 'evergif@users.noreply.github.com'
+          # Stage first: `git diff` alone ignores untracked files.
+          git add demo/*.gif
+          if git diff --cached --quiet; then
             echo 'Rendered GIFs are identical to the committed ones; nothing to push.'
             exit 0
           fi
-          git config user.name 'evergif'
-          git config user.email 'evergif@users.noreply.github.com'
-          git add demo/*.gif
           git commit -m 'chore(evergif): render demo GIFs [skip ci]'
           git push origin "HEAD:${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
           echo 'Pushed the rendered GIFs to the branch.' >> "$GITHUB_STEP_SUMMARY"
