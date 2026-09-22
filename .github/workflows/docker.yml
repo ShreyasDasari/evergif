@@ -1,9 +1,8 @@
-name: web docker
+name: docker
 
-# Verifies the Docker fallback for web demos: recording with no Node, no
-# Playwright and no browsers installed, only the official image. It runs when
-# the web scripts change, monthly, or on demand -- the image is ~1 GB, so it is
-# not worth pulling on every push.
+# Verifies the Docker fallbacks -- recording with nothing installed but Docker.
+# The images are large, so this runs when the render scripts change, monthly,
+# or on demand, rather than on every push.
 
 on:
   push:
@@ -11,7 +10,9 @@ on:
     paths:
       - 'skills/evergif/scripts/render_web.py'
       - 'skills/evergif/scripts/web_tape.py'
-      - '.github/workflows/web-docker.yml'
+      - 'skills/evergif/scripts/render.py'
+      - 'skills/evergif/scripts/doctor.py'
+      - '.github/workflows/docker.yml'
   schedule:
     - cron: '0 5 1 * *'
   workflow_dispatch:
@@ -51,5 +52,39 @@ jobs:
           echo "::notice::frames=$frames unique=$unique"
           if [ "$unique" -lt 3 ]; then
             echo "::error::the Docker recording has $unique distinct frames; it is blank or frozen"
+            exit 1
+          fi
+
+  vhs:
+    name: Record a terminal demo through Docker
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Record with --mode docker
+        working-directory: examples/shcli
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg gifsicle
+          rm -f demo/evergif.gif
+          if ! python3 ../../skills/evergif/scripts/render.py --mode docker \
+              > /tmp/vhs.log 2>&1; then
+            echo "::error::docker render failed: $(tail -n 6 /tmp/vhs.log | tr '\n' ' ')"
+            exit 1
+          fi
+          tail -n 20 /tmp/vhs.log
+          test -f demo/evergif.gif
+          echo "::notice::docker-mode GIF: $(stat -c%s demo/evergif.gif) bytes"
+
+      - name: The recording must not be blank
+        working-directory: examples/shcli
+        run: |
+          set -euo pipefail
+          unique=$(ffmpeg -v error -i demo/evergif.gif -f framemd5 - | grep -v '^#' \
+            | awk '{print $6}' | sort -u | wc -l)
+          echo "::notice::unique frames=$unique"
+          if [ "$unique" -lt 3 ]; then
+            echo "::error::the Docker recording has $unique distinct frames; it is blank"
             exit 1
           fi
