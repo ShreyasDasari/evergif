@@ -45,6 +45,17 @@ Rules that keep a recording honest:
 - **Seed data in the app, not the demo.** The fixture should already contain a
   couple of rows so the first frame is not an empty state.
 
+## Dev servers
+
+`--serve` is started before recording and stopped after, and the runner polls
+the URL until it answers rather than guessing a delay. A stock Vite app works
+as is: `--serve "npm run dev" --url http://localhost:5173`.
+
+`goto` waits for `load`, not `networkidle`. Playwright discourages
+`networkidle`, and a dev server's HMR socket or any polling request can keep
+the network busy indefinitely. Wait on a selector instead, which is what the
+step vocabulary is for.
+
 ## Determinism
 
 The runner sets `reducedMotion: 'reduce'` and a fixed viewport and colour

@@ -2,18 +2,45 @@
 
 **Your README demo that never goes stale.**
 
-evergif is an [Agent Skill](https://agentskills.io) that records a terminal
-demo GIF for your CLI, embeds it in your README, and re-renders it in CI so it
-never drifts from what your tool actually does. It works in any coding agent
-that supports the open Agent Skills standard.
+[![evergif](https://github.com/ShreyasDasari/evergif/actions/workflows/evergif.yml/badge.svg)](https://github.com/ShreyasDasari/evergif/actions/workflows/evergif.yml)
+[![tests](https://github.com/ShreyasDasari/evergif/actions/workflows/tests.yml/badge.svg)](https://github.com/ShreyasDasari/evergif/actions/workflows/tests.yml)
+[![Agent Skill](https://img.shields.io/badge/Agent%20Skill-spec%20valid-5b6cff)](https://agentskills.io)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+Every README demo GIF starts out accurate and quietly rots. You rename a flag,
+change some output, ship a new screen — and the GIF at the top of your README
+keeps showing last quarter's tool.
+
+evergif is an [Agent Skill](https://agentskills.io) that records the demo,
+embeds it, and then **re-runs your commands in CI to notice when the GIF stopped
+being true**. Ask your agent for a demo; it handles the rest.
 
 <!-- evergif:start -->
 ![Terminal demo: evergif writing a tape and the README embed block for a CLI project](demo/evergif.gif)
 <!-- evergif:end -->
 
-Ask your agent to *"add a demo gif to my README"* and it will inspect the
-project, pick the commands worth showing, write a `vhs` tape, render and
-optimize the GIF, and embed it between markers it can update later.
+```bash
+npx skills add https://github.com/ShreyasDasari/evergif --skill evergif
+```
+
+Then, in any project: *"add a demo gif to my README"*.
+
+## What it produces
+
+Terminal demos with [vhs](https://github.com/charmbracelet/vhs) — this is
+`examples/shcli`, recorded and kept current by this repo's own CI:
+
+![Terminal demo of the todo.sh CLI: --help lists the commands, list --open shows three open tasks, and stats counts 2 done and 3 open](examples/shcli/demo/evergif.gif)
+
+And web apps with [Playwright](https://playwright.dev) — `examples/webapp`,
+recorded the same way:
+
+<!-- evergif:start:webapp -->
+![Browser demo: the Tasks web app, typing 'Record a GIF of this app' into the input, clicking Add task, and the list growing to three items with the counter reading 1 done - 2 open](demo/webapp.gif)
+<!-- evergif:end:webapp -->
+
+Both are committed artifacts, re-rendered only when what they show actually
+changes.
 
 ## Install
 
@@ -132,18 +159,18 @@ your dev server and describe the steps; it starts the app, records, and writes
 the same kind of committed, reviewable script:
 
 ```bash
-evergif --web --url http://localhost:3000 --serve "npm run dev" \
-  --steps "goto /; fill #title Buy milk; click #add; wait li:nth-child(3)"
+evergif --web --url http://localhost:5173 --serve "npm run dev" \
+  --steps "goto /; wait #counter; click #counter; pause 700"
 ```
 
-<!-- evergif:start:webapp -->
-![Browser demo: the Tasks web app, typing 'Record a GIF of this app' into the input, clicking Add task, and the list growing to three items with the counter reading 1 done - 2 open](demo/webapp.gif)
-<!-- evergif:end:webapp -->
+It starts the dev server, waits for the port, records, stops the server, and
+converts the video. Verified against a stock Vite app and a static site.
 
-
-That GIF is `examples/webapp`, recorded by evergif's own CI on every run. Web
-demos are localhost-only by default and refuse to record credentials, so a
-login flow can never end up in your README.
+Freshness works on the page's **visible text**, not pixels, so restyling a
+button does not churn your GIF but renaming it does. Web demos are
+localhost-only unless you explicitly say otherwise, and steps mentioning
+passwords, tokens or API keys are refused outright — a login flow cannot end
+up in your README.
 
 ### More than one demo
 
