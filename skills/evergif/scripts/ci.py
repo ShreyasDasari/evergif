@@ -42,17 +42,14 @@ def default_branch() -> str:
     return "main"
 
 
-def select_blocks(body: str, keep: str) -> str:
-    """Emit only the chosen delivery block, so the workflow ships clean.
+def strip_block(body: str, name: str, keep: bool) -> str:
+    """Keep or drop an optional block, so the workflow ships with no dead steps.
 
-    The template marks alternatives with `#<<name` ... `#name>>`; the block
-    that is not selected is removed entirely rather than left disabled.
+    The template marks them with `#<<name` ... `#name>>`.
     """
-    for name in ("commit", "pr"):
-        pattern = rf"[ \t]*#<<{name}\n(.*?)[ \t]*#{name}>>\n"
-        replacement = (lambda m: m.group(1)) if name == keep else ""
-        body = re.sub(pattern, replacement, body, flags=re.DOTALL)
-    return body
+    pattern = rf"[ \t]*#<<{name}\n(.*?)[ \t]*#{name}>>\n"
+    return re.sub(pattern, (lambda m: m.group(1)) if keep else "", body,
+                  flags=re.DOTALL)
 
 
 def render(template: Path, args: argparse.Namespace, branch: str) -> str:
@@ -63,7 +60,12 @@ def render(template: Path, args: argparse.Namespace, branch: str) -> str:
                          ("__EVERGIF_BRANCH__", branch),
                          ("__EVERGIF_CRON__", args.cron)):
         body = body.replace(token, value)
-    return HEADER + select_blocks(body, "pr" if args.pr else "commit")
+    keep = {"pr" if args.pr else "commit"}
+    if args.web:
+        keep.add("web")
+    for name in ("commit", "pr", "web"):
+        body = strip_block(body, name, keep=name in keep)
+    return HEADER + body
 
 
 def write(out: Path, body: str, force: bool) -> bool:
@@ -90,6 +92,9 @@ def main() -> int:
                              "needs 'Allow GitHub Actions to create and approve "
                              "pull requests' in the repository settings")
     parser.add_argument("--cloud-out", default=".github/workflows/evergif-render.yml")
+    parser.add_argument("--web", action="store_true",
+                        help="add the Playwright job (default: on when "
+                             "demo/*.web.mjs exists)")
     parser.add_argument("--no-cloud", action="store_true",
                         help="skip the render-in-CI workflow")
     parser.add_argument("--force", action="store_true",
@@ -111,6 +116,11 @@ def main() -> int:
     else:
         print("covers: " + ", ".join(t.stem for t in tapes))
 
+    web_demos = sorted(Path("demo").glob("*.web.mjs")) if Path("demo").is_dir() else []
+    args.web = args.web or bool(web_demos)
+    if web_demos:
+        print("web demos: " + ", ".join(w.name.removesuffix(".web.mjs")
+                                        for w in web_demos))
     branch = args.branch or default_branch()
     freshness = render(FRESHNESS, args, branch)
     if args.stdout:

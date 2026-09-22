@@ -1,0 +1,63 @@
+{
+  "url": "http://localhost:8000",
+  "steps": [
+    {
+      "action": "goto",
+      "args": [
+        "/"
+      ],
+      "raw": "goto /"
+    },
+    {
+      "action": "wait",
+      "args": [
+        ".todo-list"
+      ],
+      "raw": "wait .todo-list"
+    },
+    {
+      "action": "fill",
+      "args": [
+        "#title",
+        "Record",
+        "a",
+        "GIF",
+        "of",
+        "this",
+        "app"
+      ],
+      "raw": "fill #title Record a GIF of this app"
+    },
+    {
+      "action": "click",
+      "args": [
+        "#add"
+      ],
+      "raw": "click #add"
+    },
+    {
+      "action": "wait",
+      "args": [
+        "li:nth-child(3)"
+      ],
+      "raw": "wait li:nth-child(3)"
+    },
+    {
+      "action": "pause",
+      "args": [
+        "900"
+      ],
+      "raw": "pause 900"
+    }
+  ],
+  "viewport": {
+    "width": 1000,
+    "height": 620
+  },
+  "pauseMs": 900,
+  "colorScheme": "light",
+  "videoDir": "demo/.webapp-video",
+  "videoPath": "demo/webapp.webm",
+  "transcriptPath": "demo/webapp.transcript.txt",
+  "serve": "python3 -m http.server 8000 --directory examples/webapp"
+}

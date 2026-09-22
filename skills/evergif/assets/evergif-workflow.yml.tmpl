@@ -179,3 +179,105 @@ __EVERGIF_SETUP__
           echo 'evergif: PR creation is disabled for this repo; see the job summary.'
           exit 1
       #pr>>
+  #<<web
+  web:
+    name: Refresh web demo GIFs
+    runs-on: ubuntu-24.04
+    # The official Playwright image already carries the browsers and their
+    # system libraries, so nothing has to be downloaded to record a web demo.
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      options: --ipc=host --init
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up the project
+        run: |
+__EVERGIF_SETUP__
+
+      - name: Install the conversion tools
+        run: |
+          set -euo pipefail
+          apt-get update -qq
+          apt-get install -y -qq ffmpeg gifsicle python3 curl
+          # git refuses to touch a checkout owned by another uid inside a container
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          NODE_PATH="$(npm root -g)"
+          export NODE_PATH
+          echo "NODE_PATH=$NODE_PATH" >> "$GITHUB_ENV"
+          node -e "require.resolve('playwright')" 2>/dev/null \
+            || npm install -g --silent playwright@1.63.0
+
+      - name: Record the web demos
+        id: web
+        run: |
+          set -uo pipefail
+          changed=''
+          read_key() { python3 -c "import json,sys;print(json.load(open(sys.argv[1])).get(sys.argv[2]) or '')" "$1" "$2"; }
+          for script in demo/*.web.mjs; do
+            [ -e "$script" ] || continue
+            name=$(basename "$script" .web.mjs)
+            settings="demo/$name.web.json"
+            url=$(read_key "$settings" url)
+            serve=$(read_key "$settings" serve)
+            webm=$(read_key "$settings" videoPath)
+            transcript=$(read_key "$settings" transcriptPath)
+            serve_pid=''
+            if [ -n "$serve" ]; then
+              bash -c "$serve" &
+              serve_pid=$!
+            fi
+            ready=''
+            for _ in $(seq 1 90); do
+              if curl -sf -o /dev/null "$url"; then ready=yes; break; fi
+              sleep 1
+            done
+            if [ -z "$ready" ]; then
+              echo "::error::$url never answered for demo '$name'"
+              [ -n "$serve_pid" ] && kill "$serve_pid" 2>/dev/null
+              exit 1
+            fi
+            node "$script"
+            status=$?
+            [ -n "$serve_pid" ] && kill "$serve_pid" 2>/dev/null
+            if [ "$status" -ne 0 ] || [ ! -f "$webm" ]; then
+              echo "::error::recording failed for demo '$name'"
+              exit 1
+            fi
+            ffmpeg -v error -y -i "$webm" -vf \
+              "fps=12,scale=1000:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=256:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle" \
+              -loop 0 "demo/$name.gif"
+            gifsicle -O3 --lossy=80 --colors 128 --no-comments --no-names \
+              --no-extensions -b "demo/$name.gif"
+            rm -rf "$webm" "demo/.$name-video"
+            new=$(sha256sum "$transcript" | cut -d' ' -f1)
+            old=$(cat "demo/$name.lock" 2>/dev/null || echo none)
+            if [ "$old" = "$new" ]; then
+              echo "$name: page content unchanged, keeping the committed GIF"
+              git checkout -- "demo/$name.gif" 2>/dev/null || true
+            else
+              echo "$name: page content changed ($old -> $new)"
+              printf '%s' "$new" > "demo/$name.lock"
+              changed="$changed $name"
+            fi
+            rm -f "$transcript"
+            ls -lh "demo/$name.gif"
+          done
+          echo "changed=${changed# }" >> "$GITHUB_OUTPUT"
+
+      - name: Commit the refreshed web GIFs
+        if: steps.web.outputs.changed != ''
+        env:
+          TARGET: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- demo/; then
+            echo 'Nothing to commit.'
+            exit 0
+          fi
+          git config user.name 'evergif'
+          git config user.email 'evergif@users.noreply.github.com'
+          git add demo/
+          git commit -m 'chore(evergif): refresh web demo GIFs [skip ci]'
+          git push origin "HEAD:$TARGET"
+  #web>>

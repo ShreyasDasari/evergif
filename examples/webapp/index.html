@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tasks</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 48px 24px;
+    font: 16px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: #f6f7fb; color: #1c1e26; display: flex; justify-content: center;
+  }
+  main { width: 100%; max-width: 560px; }
+  h1 { margin: 0 0 4px; font-size: 28px; letter-spacing: -0.02em; }
+  p.sub { margin: 0 0 28px; color: #6b7280; }
+  form { display: flex; gap: 10px; margin-bottom: 24px; }
+  input {
+    flex: 1; padding: 12px 14px; border: 1px solid #d7dae2; border-radius: 10px;
+    font: inherit; background: #fff;
+  }
+  input:focus { outline: 2px solid #5b6cff; outline-offset: 1px; border-color: transparent; }
+  button {
+    padding: 12px 18px; border: 0; border-radius: 10px; font: inherit;
+    font-weight: 600; color: #fff; background: #5b6cff; cursor: pointer;
+  }
+  ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  li {
+    display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+    background: #fff; border: 1px solid #e7e9f0; border-radius: 12px;
+  }
+  li.done span { text-decoration: line-through; color: #9aa1ad; }
+  li input[type=checkbox] { width: 18px; height: 18px; accent-color: #5b6cff; flex: none; }
+  .count { margin-top: 22px; color: #6b7280; font-size: 14px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Tasks</h1>
+  <p class="sub">A tiny app that exists so evergif has a web demo to record.</p>
+
+  <form id="new-task">
+    <input id="title" placeholder="What needs doing?" autocomplete="off" aria-label="Task">
+    <button type="submit" id="add">Add task</button>
+  </form>
+
+  <ul id="list" class="todo-list">
+    <li class="done"><input type="checkbox" checked><span>Write the tape generator</span></li>
+    <li><input type="checkbox"><span>Record a web demo</span></li>
+  </ul>
+
+  <p class="count" id="count"></p>
+</main>
+
+<script>
+  const list = document.getElementById('list');
+  const count = document.getElementById('count');
+
+  function refresh() {
+    const items = [...list.querySelectorAll('li')];
+    const done = items.filter((li) => li.classList.contains('done')).length;
+    count.textContent = `${done} done - ${items.length - done} open`;
+  }
+
+  document.getElementById('new-task').addEventListener('submit', (event) => {
+    event.preventDefault();
+    const input = document.getElementById('title');
+    const title = input.value.trim();
+    if (!title) return;
+    const li = document.createElement('li');
+    li.innerHTML = '<input type="checkbox"><span></span>';
+    li.querySelector('span').textContent = title;
+    list.append(li);
+    input.value = '';
+    refresh();
+  });
+
+  list.addEventListener('change', (event) => {
+    const li = event.target.closest('li');
+    li.classList.toggle('done', event.target.checked);
+    refresh();
+  });
+
+  refresh();
+</script>
+</body>
+</html>
