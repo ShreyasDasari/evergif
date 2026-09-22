@@ -137,7 +137,7 @@ jobs:
               echo '### evergif could not push to the default branch'
               echo
               echo 'It is probably protected. The refreshed GIFs are on the'
-              echo '`evergif/update` branch instead:'
+              echo "\`evergif/update\` branch instead:"
               echo
               echo "$SERVER/$REPO/compare/$TARGET...evergif/update?expand=1"
             } >> "$GITHUB_STEP_SUMMARY"
@@ -172,7 +172,7 @@ jobs:
           set -uo pipefail
           changed=''
           found=''
-          echo "::notice::web demos found: $(ls demo/*.web.mjs 2>&1 | tr '\n' ' ')"
+          echo "::notice::web demos found: $(printf '%s ' demo/*.web.mjs)"
           read_key() { python3 -c "import json,sys;print(json.load(open(sys.argv[1])).get(sys.argv[2]) or '')" "$1" "$2"; }
           for script in demo/*.web.mjs; do
             [ -e "$script" ] || continue
@@ -222,7 +222,7 @@ jobs:
             fi
             rm -f "$transcript"
             found="$found $name"
-            echo "::notice::$name -> $(ls -l "demo/$name.gif" 2>&1 | awk '{print $5}') bytes, lock $new"
+            echo "::notice::$name -> $(stat -c%s "demo/$name.gif") bytes, lock $new"
           done
           echo "::notice::processed:${found:- none} changed:${changed:- none}"
           echo "::notice::git status: $(git status --porcelain demo/ | tr '\n' ' ')"

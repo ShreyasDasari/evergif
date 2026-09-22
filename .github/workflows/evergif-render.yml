@@ -155,5 +155,5 @@ jobs:
             echo 'read-only token and cannot push to your branch.'
             echo
             echo 'Download the **evergif-gifs** artifact from this run, drop the'
-            echo 'files into `demo/`, and commit them to your branch.'
+            echo "files into \`demo/\`, and commit them to your branch."
           } >> "$GITHUB_STEP_SUMMARY"
