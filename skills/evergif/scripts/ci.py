@@ -1,12 +1,19 @@
 #!/usr/bin/env python3
-"""Write .github/workflows/evergif.yml, which keeps the demo GIF fresh.
+"""Write the GitHub workflows that keep the demo GIFs fresh.
 
 Usage: ci.py [--setup "pip install -e ."] [--setup "..."] [--branch main]
-             [--cron "0 6 * * 1"] [--tape demo/evergif.tape]
-             [--gif demo/evergif.gif] [--out PATH] [--force] [--stdout]
+             [--cron "0 6 * * 1"] [--pr] [--no-cloud] [--force] [--stdout]
 
-The workflow re-renders the tape on push to the default branch and weekly, and
-opens a PR only when the rendered GIF's frames differ from the committed one.
+Two workflows are written:
+
+  evergif.yml          on push, weekly and on demand, re-runs each demo's
+                       recorded commands, compares a hash of their output
+                       against demo/<name>.lock, and re-renders only the demos
+                       whose output changed. The refreshed GIFs are committed
+                       straight to the branch, which needs no repository
+                       settings; --pr opens a pull request instead.
+  evergif-render.yml   renders demo GIFs in CI, so a contributor with no local
+                       toolchain can edit a tape and let CI produce the GIF.
 """
 from __future__ import annotations
 
@@ -35,6 +42,19 @@ def default_branch() -> str:
     return "main"
 
 
+def select_blocks(body: str, keep: str) -> str:
+    """Emit only the chosen delivery block, so the workflow ships clean.
+
+    The template marks alternatives with `#<<name` ... `#name>>`; the block
+    that is not selected is removed entirely rather than left disabled.
+    """
+    for name in ("commit", "pr"):
+        pattern = rf"[ \t]*#<<{name}\n(.*?)[ \t]*#{name}>>\n"
+        replacement = (lambda m: m.group(1)) if name == keep else ""
+        body = re.sub(pattern, replacement, body, flags=re.DOTALL)
+    return body
+
+
 def render(template: Path, args: argparse.Namespace, branch: str) -> str:
     setup = args.setup or ['echo "no setup needed"']
     steps = "\n".join(f"          {line}" for line in setup)
@@ -43,7 +63,7 @@ def render(template: Path, args: argparse.Namespace, branch: str) -> str:
                          ("__EVERGIF_BRANCH__", branch),
                          ("__EVERGIF_CRON__", args.cron)):
         body = body.replace(token, value)
-    return HEADER + body
+    return HEADER + select_blocks(body, "pr" if args.pr else "commit")
 
 
 def write(out: Path, body: str, force: bool) -> bool:
@@ -65,6 +85,10 @@ def main() -> int:
     parser.add_argument("--branch", default=None, help="default: this repo's branch")
     parser.add_argument("--cron", default="0 6 * * 1", help="weekly re-render schedule")
     parser.add_argument("--out", default=".github/workflows/evergif.yml")
+    parser.add_argument("--pr", action="store_true",
+                        help="open a PR instead of committing the refreshed GIFs; "
+                             "needs 'Allow GitHub Actions to create and approve "
+                             "pull requests' in the repository settings")
     parser.add_argument("--cloud-out", default=".github/workflows/evergif-render.yml")
     parser.add_argument("--no-cloud", action="store_true",
                         help="skip the render-in-CI workflow")
@@ -97,8 +121,12 @@ def main() -> int:
     if not args.no_cloud and not write(Path(args.cloud_out),
                                        render(CLOUD, args, branch), args.force):
         return 2
-    print("enable Settings > Actions > General > "
-          "'Allow GitHub Actions to create and approve pull requests'")
+    if args.pr:
+        print("--pr needs Settings > Actions > General > 'Allow GitHub Actions "
+              "to create and approve pull requests' (off by default)")
+    else:
+        print("refreshed GIFs are committed straight to the branch; "
+              "no repository settings needed")
     if not args.no_cloud:
         print("contributors without vhs can now edit a tape, open a PR, and let "
               "CI render the GIF for them")

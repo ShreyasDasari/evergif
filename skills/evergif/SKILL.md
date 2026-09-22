@@ -131,9 +131,10 @@ The workflow covers every demo in `demo/`. It re-runs each demo's recorded
 commands, hashes the output against `demo/<name>.lock`, and re-renders and
 opens one PR for only the demos whose output changed.
 
-Tell the user to enable **Settings → Actions → General → Allow GitHub Actions
-to create and approve pull requests**, and that the first run creates the lock
-files, so it opens one PR.
+Refreshed GIFs are committed straight to the branch, so no repository setting
+is needed. Add `--pr` only if the user wants review instead; that needs
+**Settings → Actions → General → Allow GitHub Actions to create and approve
+pull requests**, which is off by default.
 
 ### 7. Report
 

@@ -12,7 +12,6 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
 
 concurrency:
   group: evergif-${{ github.ref }}
@@ -24,7 +23,9 @@ env:
 jobs:
   render:
     name: Refresh demo GIFs whose output changed
-    runs-on: ubuntu-latest
+    # Pinned, not ubuntu-latest: a runner image change would alter the rendered
+    # pixels and look like a demo that went stale.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
 
@@ -69,9 +70,25 @@ __EVERGIF_SETUP__
           done
           echo "stale=${stale# }" >> "$GITHUB_OUTPUT"
 
-      - name: Install vhs
+      - name: Install the render toolchain
         if: steps.check.outputs.stale != ''
-        uses: charmbracelet/vhs-action@v2
+        env:
+          VHS_VERSION: '0.12.0'
+          TTYD_VERSION: '1.7.7'
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg gifsicle fonts-jetbrains-mono
+          curl -fsSL -o /tmp/ttyd \
+            "https://github.com/tsl0922/ttyd/releases/download/${TTYD_VERSION}/ttyd.x86_64"
+          sudo install -m 755 /tmp/ttyd /usr/local/bin/ttyd
+          curl -fsSL -o /tmp/vhs.deb \
+            "https://github.com/charmbracelet/vhs/releases/download/v${VHS_VERSION}/vhs_${VHS_VERSION}_amd64.deb"
+          sudo dpkg -i /tmp/vhs.deb || sudo apt-get -f install -y -qq
+          # vhs uses termenv, which strips colour when CI is set.
+          echo 'CI=' >> "$GITHUB_ENV"
+          echo 'COLORTERM=truecolor' >> "$GITHUB_ENV"
+          vhs --version && ttyd --version
 
       - name: Render and optimize the stale demos
         if: steps.check.outputs.stale != ''
@@ -79,8 +96,6 @@ __EVERGIF_SETUP__
           STALE: ${{ steps.check.outputs.stale }}
         run: |
           set -euo pipefail
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq gifsicle
           for name in $STALE; do
             vhs "demo/$name.tape"
             if [ ! -f "demo/$name.gif" ]; then
@@ -92,6 +107,42 @@ __EVERGIF_SETUP__
             ls -lh "demo/$name.gif"
           done
 
+      # Committing straight to the branch needs only `contents: write`, which
+      # every repository grants by default. Opening a pull request needs a
+      # setting that is off by default, so that is opt-in (ci.py --pr).
+      #<<commit
+      - name: Commit the refreshed GIFs
+        if: steps.check.outputs.stale != ''
+        env:
+          TARGET: ${{ github.ref_name }}
+          SERVER: ${{ github.server_url }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- demo/; then
+            echo 'Rendered output is identical to what is committed.'
+            exit 0
+          fi
+          git config user.name 'evergif'
+          git config user.email 'evergif@users.noreply.github.com'
+          git add demo/
+          git commit -m 'chore(evergif): refresh demo GIFs [skip ci]'
+          if git push origin "HEAD:$TARGET" 2>/dev/null; then
+            echo "Refreshed the demo GIFs on \`$TARGET\`." >> "$GITHUB_STEP_SUMMARY"
+          else
+            git push --force origin 'HEAD:evergif/update'
+            {
+              echo '### evergif could not push to the default branch'
+              echo
+              echo 'It is probably protected. The refreshed GIFs are on the'
+              echo '`evergif/update` branch instead:'
+              echo
+              echo "$SERVER/$REPO/compare/$TARGET...evergif/update?expand=1"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      #commit>>
+      #<<pr
       - name: Open a pull request
         id: pr
         if: steps.check.outputs.stale != ''
@@ -111,7 +162,6 @@ __EVERGIF_SETUP__
             **${{ steps.check.outputs.stale }}**
 
             Re-rendered from `demo/<name>.tape` by the evergif workflow.
-            Review the GIFs and merge to keep the README current.
           labels: evergif
 
       - name: Explain a failed pull request
@@ -120,13 +170,12 @@ __EVERGIF_SETUP__
           {
             echo '### evergif could not open a pull request'
             echo
-            echo 'The GIFs were re-rendered, but this workflow is not allowed to'
-            echo 'open a pull request. Enable it once:'
-            echo
-            echo '**Settings -> Actions -> General -> Workflow permissions ->**'
-            echo '**"Allow GitHub Actions to create and approve pull requests"**'
-            echo
-            echo 'Then re-run this workflow. Nothing else needs to change.'
+            echo 'Pull requests from Actions are disabled for this repository.'
+            echo 'Either enable **Settings -> Actions -> General -> Workflow**'
+            echo '**permissions -> "Allow GitHub Actions to create and approve**'
+            echo '**pull requests"**, or re-run `evergif --ci` without `--pr` to'
+            echo 'commit the refreshed GIFs directly instead.'
           } >> "$GITHUB_STEP_SUMMARY"
-          echo 'evergif: enable "Allow GitHub Actions to create and approve pull requests" in Settings > Actions > General.'
+          echo 'evergif: PR creation is disabled for this repo; see the job summary.'
           exit 1
+      #pr>>

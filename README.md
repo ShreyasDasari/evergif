@@ -147,6 +147,10 @@ it falls back to the official `ghcr.io/charmbracelet/vhs` Docker image. Only
 when Docker is unavailable too does it stop and print the exact install
 command for your OS.
 
+In CI nothing is assumed either: the workflows install a pinned vhs, ttyd and
+ffmpeg themselves and run on a pinned `ubuntu-24.04` image, so a runner update
+cannot silently change how your GIFs look.
+
 ### Safety
 
 Recorded commands are checked in code, not just in the prompt. evergif refuses

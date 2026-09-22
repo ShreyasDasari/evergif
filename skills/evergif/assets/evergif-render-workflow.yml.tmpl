@@ -32,7 +32,9 @@ env:
 jobs:
   render:
     name: Render demo GIFs
-    runs-on: ubuntu-latest
+    # Pinned, not ubuntu-latest: a runner image change would alter the
+    # rendered pixels for everyone.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
         with:
@@ -71,9 +73,25 @@ __EVERGIF_SETUP__
           fi
           echo "names=${names# }" >> "$GITHUB_OUTPUT"
 
-      - name: Install vhs
+      - name: Install the render toolchain
         if: steps.pick.outputs.names != ''
-        uses: charmbracelet/vhs-action@v2
+        env:
+          VHS_VERSION: '0.12.0'
+          TTYD_VERSION: '1.7.7'
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg gifsicle fonts-jetbrains-mono
+          curl -fsSL -o /tmp/ttyd \
+            "https://github.com/tsl0922/ttyd/releases/download/${TTYD_VERSION}/ttyd.x86_64"
+          sudo install -m 755 /tmp/ttyd /usr/local/bin/ttyd
+          curl -fsSL -o /tmp/vhs.deb \
+            "https://github.com/charmbracelet/vhs/releases/download/v${VHS_VERSION}/vhs_${VHS_VERSION}_amd64.deb"
+          sudo dpkg -i /tmp/vhs.deb || sudo apt-get -f install -y -qq
+          # vhs uses termenv, which strips colour when CI is set.
+          echo 'CI=' >> "$GITHUB_ENV"
+          echo 'COLORTERM=truecolor' >> "$GITHUB_ENV"
+          vhs --version && ttyd --version
 
       - name: Render and optimize
         if: steps.pick.outputs.names != ''
@@ -81,8 +99,6 @@ __EVERGIF_SETUP__
           NAMES: ${{ steps.pick.outputs.names }}
         run: |
           set -euo pipefail
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq gifsicle
           for name in $NAMES; do
             vhs "demo/$name.tape"
             if [ ! -f "demo/$name.gif" ]; then
