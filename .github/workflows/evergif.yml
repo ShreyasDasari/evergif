@@ -144,11 +144,6 @@ jobs:
   web:
     name: Refresh web demo GIFs
     runs-on: ubuntu-24.04
-    # The official Playwright image already carries the browsers and their
-    # system libraries, so nothing has to be downloaded to record a web demo.
-    container:
-      image: mcr.microsoft.com/playwright:v1.63.0-noble
-      options: --ipc=host --init
     steps:
       - uses: actions/checkout@v7
 
@@ -156,18 +151,18 @@ jobs:
         run: |
           echo "evergif needs no setup: stdlib Python only"
 
-      - name: Install the conversion tools
+      - name: Install Playwright and the conversion tools
+        env:
+          PLAYWRIGHT_VERSION: '1.63.0'
         run: |
           set -euo pipefail
-          apt-get update -qq
-          apt-get install -y -qq ffmpeg gifsicle python3 curl
-          # git refuses to touch a checkout owned by another uid inside a container
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg gifsicle
+          npm install -g --silent "playwright@${PLAYWRIGHT_VERSION}"
           NODE_PATH="$(npm root -g)"
-          export NODE_PATH
           echo "NODE_PATH=$NODE_PATH" >> "$GITHUB_ENV"
-          node -e "require.resolve('playwright')" 2>/dev/null \
-            || npm install -g --silent playwright@1.63.0
+          # --with-deps pulls the browser's system libraries too.
+          npx --yes "playwright@${PLAYWRIGHT_VERSION}" install --with-deps chromium
 
       - name: Record the web demos
         id: web
