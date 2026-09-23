@@ -9,9 +9,9 @@
   --color-border-strong: rgba(255, 255, 255, 0.14);
   --color-surface: rgba(255, 255, 255, 0.03);
   --color-surface-2: rgba(255, 255, 255, 0.06);
-  --color-accent: #7c85ff;
-  --color-accent-2: #b06bff;
-  --color-accent-foreground: #ffffff;
+  --color-accent: #22d3ee;
+  --color-accent-2: #2dd4bf;
+  --color-accent-foreground: #04121a;
 
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-mono-jb), ui-monospace, 'SFMono-Regular', monospace;
@@ -83,7 +83,7 @@
   height: 46rem;
   top: -16rem;
   left: -10rem;
-  background: radial-gradient(circle at center, #4b46c9 0%, transparent 68%);
+  background: radial-gradient(circle at center, #0e7f96 0%, transparent 68%);
   animation: aurora-drift-a 22s ease-in-out infinite alternate;
 }
 .aurora::after {
@@ -91,7 +91,7 @@
   height: 40rem;
   top: -8rem;
   right: -12rem;
-  background: radial-gradient(circle at center, #7d34c0 0%, transparent 68%);
+  background: radial-gradient(circle at center, #0f7d6b 0%, transparent 68%);
   animation: aurora-drift-b 26s ease-in-out infinite alternate;
 }
 /* faint grid tint across the whole page, masked toward the top */
