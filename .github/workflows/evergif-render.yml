@@ -144,7 +144,23 @@ jobs:
             exit 0
           fi
           git commit -m 'chore(evergif): render demo GIFs [skip ci]'
-          git push origin "HEAD:${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
+          TARGET="${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
+          # The terminal and web jobs run in parallel and both push here, so a
+          # push can land on a branch that moved. Rebase and retry before
+          # concluding the branch is protected.
+          pushed=''
+          for _ in 1 2 3; do
+            if git push origin "HEAD:$TARGET" 2>/dev/null; then
+              pushed=yes
+              break
+            fi
+            git fetch --quiet origin "$TARGET" || break
+            git rebase --quiet "origin/$TARGET" || { git rebase --abort || true; break; }
+          done
+          if [ -z "$pushed" ]; then
+            echo "::error::could not push the rendered GIFs to $TARGET"
+            exit 1
+          fi
           echo 'Pushed the rendered GIFs to the branch.' >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload the GIFs for a fork pull request

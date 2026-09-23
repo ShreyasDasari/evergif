@@ -147,7 +147,19 @@ jobs:
             exit 0
           fi
           git commit -m 'chore(evergif): refresh demo GIFs [skip ci]'
-          if git push origin "HEAD:$TARGET" 2>/dev/null; then
+          # The terminal and web jobs run in parallel and both push here, so a
+          # push can land on a branch that moved. Rebase and retry before
+          # concluding the branch is protected.
+          pushed=''
+          for _ in 1 2 3; do
+            if git push origin "HEAD:$TARGET" 2>/dev/null; then
+              pushed=yes
+              break
+            fi
+            git fetch --quiet origin "$TARGET" || break
+            git rebase --quiet "origin/$TARGET" || { git rebase --abort || true; break; }
+          done
+          if [ -n "$pushed" ]; then
             echo "Refreshed the demo GIFs on \`$TARGET\`." >> "$GITHUB_STEP_SUMMARY"
           else
             git push --force origin 'HEAD:evergif/update'
@@ -276,4 +288,23 @@ jobs:
             exit 0
           fi
           git commit -m 'chore(evergif): refresh web demo GIFs [skip ci]'
-          git push origin "HEAD:$TARGET"
+          # The terminal and web jobs run in parallel and both push here, so a
+          # push can land on a branch that moved. Rebase and retry before
+          # concluding the branch is protected.
+          pushed=''
+          for _ in 1 2 3; do
+            if git push origin "HEAD:$TARGET" 2>/dev/null; then
+              pushed=yes
+              break
+            fi
+            git fetch --quiet origin "$TARGET" || break
+            git rebase --quiet "origin/$TARGET" || { git rebase --abort || true; break; }
+          done
+          if [ -z "$pushed" ]; then
+            git push --force origin 'HEAD:evergif/update'
+            {
+              echo '### evergif could not push to the default branch'
+              echo
+              echo "The refreshed web GIFs are on the \`evergif/update\` branch."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
