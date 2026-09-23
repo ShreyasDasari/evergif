@@ -69,7 +69,7 @@ export function CopyBlock({
 
   return (
     <div
-      className={`group relative flex items-start gap-3 rounded-lg border border-border-strong bg-surface px-4 py-3.5 ${className ?? ''}`}
+      className={`glass group relative flex items-start gap-3 rounded-xl px-4 py-3.5 ${className ?? ''}`}
     >
       <pre className="min-w-0 flex-1 overflow-x-auto font-mono text-[13px] leading-relaxed text-foreground">
         <code>
@@ -85,7 +85,7 @@ export function CopyBlock({
         type="button"
         onClick={copy}
         aria-label={copied ? 'Copied' : label}
-        className="sticky right-0 top-0 mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border text-muted transition-colors hover:border-accent hover:text-accent"
+        className="sticky right-0 top-0 mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-white/10 bg-white/5 text-muted transition-colors hover:border-accent hover:text-accent"
       >
         {copied ? (
           <CheckIcon className="h-3.5 w-3.5 text-accent" />

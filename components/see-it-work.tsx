@@ -18,13 +18,13 @@ const README_EMBED = `<!-- evergif:start -->
 ![Terminal demo of the todo CLI: --help lists the commands, list --open shows three open tasks](demo/evergif.gif)
 <!-- evergif:end -->`
 
-const WEB_COMMAND = `evergif --web --url http://localhost:5173 --serve "npm run dev" \\
-  --steps "goto /; wait #counter; click #counter; pause 700"`
+const WEB_COMMAND = `evergif --web --url http://localhost:3000 --serve "npm run dev" \\
+  --steps "goto /; wait #invoice; pause 800; click text=Create invoice"`
 
 function ChatExchange() {
   return (
     <div className="flex flex-col gap-4">
-      <div className="rounded-lg border border-border bg-surface p-4">
+      <div className="glass rounded-xl p-4">
         <p className="mb-1.5 font-mono text-xs uppercase tracking-[0.14em] text-faint">
           You
         </p>
@@ -32,25 +32,25 @@ function ChatExchange() {
           add a demo gif to my README
         </p>
       </div>
-      <div className="rounded-lg border border-border bg-surface p-4">
+      <div className="glass rounded-xl p-4">
         <p className="mb-1.5 font-mono text-xs uppercase tracking-[0.14em] text-accent">
-          evergif
+          <span className="text-accent">/</span>evergif
         </p>
         <p className="text-sm leading-relaxed text-muted">
           Inspected the repo — a Python CLI with 3 commands. Recording{' '}
-          <code className="rounded bg-surface-2 px-1 py-0.5 font-mono text-[12px] text-foreground">
+          <code className="rounded bg-white/10 px-1 py-0.5 font-mono text-[12px] text-foreground">
             --help
           </code>
           ,{' '}
-          <code className="rounded bg-surface-2 px-1 py-0.5 font-mono text-[12px] text-foreground">
+          <code className="rounded bg-white/10 px-1 py-0.5 font-mono text-[12px] text-foreground">
             list --open
           </code>
           , and{' '}
-          <code className="rounded bg-surface-2 px-1 py-0.5 font-mono text-[12px] text-foreground">
+          <code className="rounded bg-white/10 px-1 py-0.5 font-mono text-[12px] text-foreground">
             stats
           </code>
           . Writing{' '}
-          <code className="rounded bg-surface-2 px-1 py-0.5 font-mono text-[12px] text-foreground">
+          <code className="rounded bg-white/10 px-1 py-0.5 font-mono text-[12px] text-foreground">
             demo/evergif.tape
           </code>
           …
@@ -68,6 +68,8 @@ function TerminalTab() {
         <TerminalFrame
           title="demo/evergif.gif"
           caption="examples/shcli — recorded and kept current by CI."
+          src="/demo-cli.gif"
+          alt="Terminal recording of a CLI session captured by evergif."
         />
       </div>
       <div>
@@ -100,11 +102,20 @@ function WebTab() {
       <div className="flex flex-col gap-4">
         <CopyBlock code={WEB_COMMAND} label="Copy command" display={WEB_COMMAND} />
         <p className="text-sm leading-relaxed text-muted">
-          evergif starts your dev server, waits for the port, records with
-          Playwright, stops the server, and converts the video.
+          <span className="font-mono text-foreground">
+            <span className="text-accent">/</span>evergif
+          </span>{' '}
+          starts your dev server, waits for the port, records the flow with
+          Playwright, stops the server, and converts the video to an optimized
+          GIF.
         </p>
       </div>
-      <BrowserFrame url="localhost:5173" caption="demo/webapp.gif" />
+      <BrowserFrame
+        url="localhost:3000"
+        caption="demo/webapp.gif — the Invoice Maker app, recorded end to end."
+        src="/demo-web.gif"
+        alt="Browser recording of the Invoice Maker web app captured by evergif."
+      />
     </div>
   )
 }
@@ -121,7 +132,7 @@ function FreshTab() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-xl border border-border bg-surface p-6">
+        <div className="glass rounded-2xl p-6">
           <p className="font-mono text-xs uppercase tracking-[0.14em] text-faint">
             Match
           </p>
@@ -129,7 +140,7 @@ function FreshTab() {
             Nothing renders. Your GIF is still true.
           </p>
         </div>
-        <div className="rounded-xl border border-accent/50 bg-accent/[0.06] p-6">
+        <div className="glass rounded-2xl border border-accent/40 p-6 shadow-[0_0_60px_-30px_var(--color-accent)]">
           <p className="font-mono text-xs uppercase tracking-[0.14em] text-accent">
             Changed
           </p>
@@ -157,7 +168,7 @@ function FlowNode({
 }) {
   return (
     <div
-      className={`flex items-center justify-center rounded-lg border border-border bg-surface px-4 py-4 text-center text-sm leading-snug text-foreground ${
+      className={`glass flex items-center justify-center rounded-xl px-4 py-4 text-center text-sm leading-snug text-foreground ${
         mono ? 'font-mono text-[13px]' : ''
       }`}
     >
@@ -169,7 +180,7 @@ function FlowNode({
 function FlowArrow() {
   return (
     <div
-      className="flex items-center justify-center text-faint"
+      className="flex items-center justify-center text-accent/70"
       aria-hidden="true"
     >
       <span className="md:hidden">↓</span>
@@ -196,8 +207,8 @@ export function SeeItWork() {
   }
 
   return (
-    <section id="see-it-work" className="border-t border-border">
-      <div className="mx-auto max-w-[1100px] px-5 py-16 sm:px-8 sm:py-20">
+    <section id="see-it-work" className="scroll-mt-24">
+      <div className="mx-auto max-w-[1080px] px-5 py-16 sm:px-8 sm:py-24">
         <Reveal>
           <SectionHeading eyebrow="See it work" title="Show, don't claim">
             The same skill, three ways: a terminal recording, a web app
@@ -210,7 +221,7 @@ export function SeeItWork() {
             <div
               role="tablist"
               aria-label="See evergif in action"
-              className="flex w-full gap-1 rounded-lg border border-border bg-surface p-1 sm:w-auto sm:inline-flex"
+              className="glass flex w-full gap-1 rounded-2xl p-1.5 sm:w-auto sm:inline-flex"
             >
               {TABS.map((tab, i) => {
                 const selected = active === tab.id
@@ -227,9 +238,9 @@ export function SeeItWork() {
                     tabIndex={selected ? 0 : -1}
                     onClick={() => setActive(tab.id)}
                     onKeyDown={(e) => onKeyDown(e, i)}
-                    className={`flex-1 whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition-colors sm:flex-none ${
+                    className={`flex-1 whitespace-nowrap rounded-xl px-4 py-2 text-sm font-medium transition-colors sm:flex-none ${
                       selected
-                        ? 'bg-surface-2 text-foreground'
+                        ? 'bg-white/10 text-foreground shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)]'
                         : 'text-muted hover:text-foreground'
                     }`}
                   >
@@ -239,7 +250,7 @@ export function SeeItWork() {
               })}
             </div>
 
-            <div className="mt-6 rounded-xl border border-border bg-background p-5 sm:p-7">
+            <div className="glass mt-6 rounded-2xl p-5 sm:p-7">
               {TABS.map((tab) => (
                 <div
                   key={tab.id}

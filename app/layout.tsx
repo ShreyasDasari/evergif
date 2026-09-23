@@ -71,7 +71,11 @@ export default function RootLayout({
       lang="en"
       className={`${inter.variable} ${jetbrainsMono.variable} bg-background`}
     >
-      <body className="min-h-screen antialiased">{children}</body>
+      <body className="min-h-screen antialiased">
+        <div className="aurora" aria-hidden="true" />
+        <div className="aurora-grid" aria-hidden="true" />
+        {children}
+      </body>
     </html>
   )
 }

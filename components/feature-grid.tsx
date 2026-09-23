@@ -30,8 +30,8 @@ const FEATURES = [
 
 export function FeatureGrid() {
   return (
-    <section className="border-t border-border">
-      <div className="mx-auto max-w-[1100px] px-5 py-16 sm:px-8 sm:py-20">
+    <section id="features" className="scroll-mt-24">
+      <div className="mx-auto max-w-[1080px] px-5 py-16 sm:px-8 sm:py-24">
         <Reveal>
           <SectionHeading
             eyebrow="Features"
@@ -39,13 +39,13 @@ export function FeatureGrid() {
           />
         </Reveal>
 
-        <div className="mt-10 grid gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((feature, i) => (
             <Reveal
               as="article"
               key={feature.title}
               delay={(i % 3) * 60}
-              className="bg-background p-7"
+              className="glass glass-hover rounded-2xl p-7"
             >
               <h3 className="text-base font-semibold tracking-tight text-foreground">
                 {feature.title}
