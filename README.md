@@ -1,19 +1,24 @@
+<div align="center">
+
 # evergif
 
 **Your README demo that never goes stale.**
 
 [![evergif](https://github.com/ShreyasDasari/evergif/actions/workflows/evergif.yml/badge.svg)](https://github.com/ShreyasDasari/evergif/actions/workflows/evergif.yml)
 [![tests](https://github.com/ShreyasDasari/evergif/actions/workflows/tests.yml/badge.svg)](https://github.com/ShreyasDasari/evergif/actions/workflows/tests.yml)
+[![release](https://img.shields.io/github/v/tag/ShreyasDasari/evergif?label=release&color=5b6cff)](https://github.com/ShreyasDasari/evergif/releases)
 [![Agent Skill](https://img.shields.io/badge/Agent%20Skill-spec%20valid-5b6cff)](https://agentskills.io)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Every README demo GIF starts out accurate and quietly rots. You rename a flag,
+</div>
+
+Every README demo starts out accurate and quietly rots. You rename a flag,
 change some output, ship a new screen — and the GIF at the top of your README
 keeps showing last quarter's tool.
 
 evergif is an [Agent Skill](https://agentskills.io) that records the demo,
 embeds it, and then **re-runs your commands in CI to notice when the GIF stopped
-being true**. Ask your agent for a demo; it handles the rest.
+being true.** Ask your agent for a demo; it handles the rest.
 
 <!-- evergif:start -->
 ![Terminal demo: evergif writing a tape and the README embed block for a CLI project](demo/evergif.gif)
@@ -25,22 +30,33 @@ npx skills add https://github.com/ShreyasDasari/evergif --skill evergif
 
 Then, in any project: *"add a demo gif to my README"*.
 
+---
+
+## Contents
+
+[What it produces](#what-it-produces) · [Install](#install) ·
+[Supported agents](#supported-agents) · [Usage](#usage) ·
+[How it stays fresh](#how-it-stays-fresh) · [Rendering in CI](#rendering-in-ci) ·
+[Requirements](#requirements) · [Safety](#safety) ·
+[Why the GIFs look good](#why-the-gifs-look-good) · [Contributing](#contributing) ·
+[Roadmap](#roadmap)
+
 ## What it produces
 
-Terminal demos with [vhs](https://github.com/charmbracelet/vhs) — this is
-`examples/shcli`, recorded and kept current by this repo's own CI:
+**Terminal demos** with [vhs](https://github.com/charmbracelet/vhs). This is
+`examples/shcli`, recorded and kept current by this repository's own CI:
 
 ![Terminal demo of the todo.sh CLI: --help lists the commands, list --open shows three open tasks, and stats counts 2 done and 3 open](examples/shcli/demo/evergif.gif)
 
-And web apps with [Playwright](https://playwright.dev) — `examples/webapp`,
-recorded the same way:
+**Web app demos** with [Playwright](https://playwright.dev). This is
+`examples/webapp`, recorded the same way:
 
 <!-- evergif:start:webapp -->
 ![Browser demo: the Tasks web app, typing 'Record a GIF of this app' into the input, clicking Add task, and the list growing to three items with the counter reading 1 done - 2 open](demo/webapp.gif)
 <!-- evergif:end:webapp -->
 
-Both are committed artifacts, re-rendered only when what they show actually
-changes.
+Every demo is a committed artifact — a recording script, a GIF and a lock file —
+re-rendered only when what it shows actually changes.
 
 ## Install
 
@@ -50,10 +66,10 @@ One line, any agent:
 npx skills add https://github.com/ShreyasDasari/evergif --skill evergif
 ```
 
-Add `-g` to install it globally instead of in the current project.
+Add `-g` to install globally instead of in the current project.
 
 <details>
-<summary>Claude Code plugin</summary>
+<summary><b>Claude Code plugin</b></summary>
 
 ```
 /plugin marketplace add ShreyasDasari/evergif
@@ -63,10 +79,10 @@ Add `-g` to install it globally instead of in the current project.
 </details>
 
 <details>
-<summary>Manual install (no installer)</summary>
+<summary><b>Manual install</b> (no installer)</summary>
 
-Clone the repo, then symlink the canonical skill into your agent's directory.
-`~/.agents/skills/` is read by most agents:
+Clone the repository, then symlink the canonical skill into your agent's
+directory. `~/.agents/skills/` is read by most agents:
 
 ```bash
 git clone https://github.com/ShreyasDasari/evergif.git
@@ -76,13 +92,13 @@ ln -s "$PWD/evergif/skills/evergif" ~/.gemini/skills/evergif   # Gemini CLI
 ```
 
 On Windows, symlinks need `git clone -c core.symlinks=true` plus Developer
-Mode. Without them, copy the folder instead (`xcopy /E /I`), or use
-`npx skills add ... --copy`.
+Mode. Without them, copy the folder instead (`xcopy /E /I`), or install with
+`npx skills add … --copy`.
 
 </details>
 
 <details>
-<summary>Agents without skill support</summary>
+<summary><b>Agents without skill support</b></summary>
 
 Add this to your `AGENTS.md`, `CLAUDE.md`, or custom instructions:
 
@@ -97,8 +113,8 @@ read `skills/evergif/SKILL.md` and follow it exactly.
 
 ## Supported agents
 
-This repo exposes the skill at every agent's standard discovery path through
-three symlinks, so cloning it is enough for any of these to find it.
+This repository exposes the skill at every agent's standard discovery path
+through three symlinks, so cloning it is enough for any of these to find it.
 
 | Agent | Install | Project discovery path | Status |
 |---|---|---|---|
@@ -114,48 +130,49 @@ three symlinks, so cloning it is enough for any of these to find it.
 | Amp | manual | `.agents/skills/`, `.claude/skills/` | Verified from docs |
 | Antigravity | manual | `.agents/skills/` | Verified from docs |
 
-**Tested end to end** means the skill was installed, discovered, and run to a
-finished GIF in that agent on a real project. *Install tested* means
-`npx skills add` placed it at the documented path, but that agent was not
-installed here to run it. *Verified from docs* means the path comes from that
-agent's official documentation and nothing else.
+**Tested end to end** — installed, discovered, and run to a finished GIF in that
+agent on a real project. *Install tested* — `npx skills add` placed it at the
+documented path, but that agent was not available here to run it. *Verified from
+docs* — the path comes from that agent's official documentation and nothing else.
 
-> **Note on Gemini CLI:** its docs list `.agents/skills/` as an alias, but
-> Gemini CLI 0.27.0 did not discover the skill there in testing — only
-> `.gemini/skills/` worked. That is why this repo carries a third symlink.
-> If a later version reads `.agents/skills/`, the extra link is harmless.
+> [!NOTE]
+> **Gemini CLI** documents `.agents/skills/` as an alias, but version 0.27.0 did
+> not discover the skill there in testing; only `.gemini/skills/` worked. That is
+> why this repository carries a third symlink. If a later version reads
+> `.agents/skills/`, the extra link is harmless.
 
-Global paths differ per agent; `~/.agents/skills/` covers most of the list.
+Global paths differ per agent. `~/.agents/skills/` covers most of the list;
 Claude Code and Cline read `~/.claude/skills/` (Cline also `~/.cline/skills/`),
 and Gemini CLI reads `~/.gemini/skills/`.
 
 ## Usage
 
-Ask in plain language — *"run evergif"*, *"record a terminal demo"*, *"update
-the README gif"* — or use the options:
+Ask in plain language — *"run evergif"*, *"record a terminal demo"*, *"update the
+README gif"* — or steer it with options:
 
 | Option | What it does | Default |
 |---|---|---|
 | `--commands "a; b"` | Record exactly these commands (1–3) | the agent picks them |
 | `--name NAME` | Which demo to write, so one README can hold several | `evergif` |
+| `--web` | Record a web app with Playwright instead of a terminal | off |
 | `--theme NAME` | Any theme from `vhs themes` | `Catppuccin Mocha` |
-| `--ci` | Also add `.github/workflows/evergif.yml` | off |
+| `--ci` | Add the GitHub workflows that keep demos fresh | off |
 
-What you get:
+What lands in your repository:
 
 ```
 demo/evergif.tape     the vhs script, committed so renders are reproducible
 demo/evergif.gif      under 2 MB where possible, never over 5 MB
-demo/evergif.lock     hash of the recorded output, for the CI freshness check
+demo/evergif.lock     what the demo showed, for the CI freshness check
 README.md             an embed between <!-- evergif:start --> / <!-- evergif:end -->
 ```
 
-Re-running evergif updates the marker block in place. It never adds a second one.
+Re-running evergif updates that block in place. It never adds a second one.
 
 ### Web apps
 
-evergif records browser demos too, with Playwright instead of vhs. Point it at
-your dev server and describe the steps; it starts the app, records, and writes
+Point it at your dev server and describe the steps. evergif starts the app,
+waits for the port, records, stops the server, and converts the video — writing
 the same kind of committed, reviewable script:
 
 ```bash
@@ -163,19 +180,14 @@ evergif --web --url http://localhost:5173 --serve "npm run dev" \
   --steps "goto /; wait #counter; click #counter; pause 700"
 ```
 
-It starts the dev server, waits for the port, records, stops the server, and
-converts the video. Verified against a stock Vite app and a static site.
-
-Freshness works on the page's **visible text**, not pixels, so restyling a
-button does not churn your GIF but renaming it does. Web demos are
-localhost-only unless you explicitly say otherwise, and steps mentioning
-passwords, tokens or API keys are refused outright — a login flow cannot end
-up in your README.
+Verified against a stock Vite dev server and a static site. Freshness is
+measured on the page's **visible text**, so restyling a button does not churn
+your GIF, but renaming it does.
 
 ### More than one demo
 
-Ask for a demo of a specific feature and it becomes its own named demo:
-*"add a gif showing the install flow"* writes `demo/install.tape`,
+Ask for a demo of a specific feature and it becomes its own named demo.
+*"Add a gif showing the install flow"* writes `demo/install.tape`,
 `demo/install.gif`, and its own marker pair:
 
 ```
@@ -184,65 +196,93 @@ Ask for a demo of a specific feature and it becomes its own named demo:
 <!-- evergif:end:install -->
 ```
 
-Each demo carries its own lock file, so CI re-renders **only** the demos whose
-output actually changed, not all of them.
+Each demo carries its own lock file, so CI re-renders **only** the demos that
+actually changed — not all of them.
 
-### Zero setup
-
-Terminal demos need `vhs` (plus `ttyd` and `ffmpeg`); on macOS that is
-`brew install vhs gifsicle`. evergif checks first and prints the exact command
-for your OS rather than failing halfway through.
-
-Web demos need nothing but Node: evergif fetches Playwright and its browser
-into its own cache, never into your project. On a Linux host with no Node at
-all, `--docker` records with the official Playwright image instead.
-
-In CI nothing is assumed either: the workflows install a pinned vhs, ttyd and
-ffmpeg themselves and run on a pinned `ubuntu-24.04` image, so a runner update
-cannot silently change how your GIFs look.
-
-### Safety
-
-Recorded commands are checked in code, not just in the prompt. evergif refuses
-to record anything destructive, networked, privileged, interactive, or
-non-deterministic, and anything that could print environment variables,
-credentials, or paths inside your home directory. It records `--help`,
-`--version`, `--dry-run`, and runs against sample data already in your repo.
-
-## How freshness works
+## How it stays fresh
 
 With `--ci`, evergif adds a workflow that runs on every push to your default
 branch, weekly, and on demand. For each demo it re-runs the exact commands that
-demo shows and hashes their output. If the output is byte-identical to the hash
-in `demo/<name>.lock`, that GIF is still accurate and nothing is rendered. Only
-the demos whose output changed are re-rendered, and they land in one pull
-request together.
+demo shows and hashes their output together with the recording script. If that
+hash matches `demo/<name>.lock`, the GIF is still accurate and **nothing is
+rendered**. Only demos that changed are re-rendered.
 
-Comparing output rather than pixels is deliberate. Terminal recordings are not
-frame-identical between runs (capture timing jitters by a frame or two), so a
-pixel or frame comparison would open a pull request every single week. The
-command output only changes when your CLI actually changes, which is the thing
-you want to hear about.
+Comparing output rather than pixels is deliberate: terminal recordings are not
+frame-identical between runs — capture timing jitters by a frame or two — so a
+pixel comparison would raise a change every single week. Command output changes
+only when your CLI does, which is the thing worth hearing about. Hashing the
+script alongside it means a new theme, size or pacing re-renders too.
 
-Because the PR always targets the same `evergif/update` branch, repeated
-changes update one pull request instead of piling up. The first run after you
-add the workflow creates `demo/evergif.lock`, so expect one PR to start with.
+Refreshed GIFs are **committed straight to the branch**, which works with a
+repository's default permissions — there is no setting to enable and nothing to
+approve. If the branch is protected, the workflow pushes to `evergif/update`
+and prints a compare link in the job summary.
 
-The workflow needs **Settings → Actions → General → Allow GitHub Actions to
-create and approve pull requests**.
+Prefer review? `--ci --pr` opens a pull request instead. That path needs
+**Settings → Actions → General → Allow GitHub Actions to create and approve pull
+requests**, which is off by default.
 
-## Rendering in the cloud
+## Rendering in CI
 
 `--ci` also adds `evergif-render.yml`, so nobody needs a local toolchain to
 change a demo. Edit `demo/<name>.tape`, open a pull request, and CI renders the
 GIF and pushes it back onto your branch. You can also trigger it by hand from
-the Actions tab for one demo or all of them.
+the Actions tab, for one demo or all of them.
 
-Pull requests **from forks** get the rendered GIFs as a downloadable artifact
-instead of a push. That is deliberate: a tape is executable content, so
+Pull requests **from forks** receive the rendered GIFs as a downloadable
+artifact instead of a push. That is deliberate: a tape is executable content, so
 rendering it with a write token and repository secrets — which is what
-`pull_request_target` would do — would hand any stranger who opens a pull
-request the keys to the repo. evergif never uses `pull_request_target`.
+`pull_request_target` does — would hand anyone who opens a pull request the keys
+to the repository. evergif never uses `pull_request_target`.
+
+## Requirements
+
+Terminal demos need `vhs`, plus `ttyd` and `ffmpeg`. On macOS that is one line:
+
+```bash
+brew install vhs gifsicle
+```
+
+evergif checks before it starts and prints the exact command for your OS rather
+than failing halfway through.
+
+Web demos need nothing but Node: Playwright and its browser are fetched into
+evergif's own cache, never into your project. On a Linux host with no Node at
+all, `--docker` records with the official Playwright image instead.
+
+CI assumes nothing either. The workflows install pinned versions of vhs, ttyd
+and ffmpeg themselves and run on a pinned `ubuntu-24.04` image, so a runner
+update cannot silently change how your GIFs look.
+
+## Safety
+
+Recorded commands are checked **in code**, not just in the prompt. evergif
+refuses to record anything destructive, networked, privileged, interactive or
+non-deterministic, along with anything that could print environment variables,
+credentials, or paths inside your home directory. It records `--help`,
+`--version`, `--dry-run`, and runs against sample data already in your repository.
+
+Web demos are localhost-only unless you explicitly say otherwise, and steps
+mentioning passwords, tokens or API keys are refused outright — a login flow
+cannot end up in your README.
+
+## Why the GIFs look good
+
+A demo that is illegible is worse than no demo, so evergif treats quality as a
+feature:
+
+- **Recorded at display size.** GitHub renders a README about 890px wide, so
+  demos default to 1100px and are never downscaled. Shrinking a UI recording
+  softens every label in it.
+- **Colours given up last.** A crushed palette is what bands gradients and
+  fringes small text, so optimization spends lossy compression first and holds
+  256 colours as long as the size budget allows.
+- **Lossless when it fits.** Both locally and in CI, optimization starts
+  lossless and steps down only while over budget, applying each level to the
+  pristine render rather than stacking them.
+- **Deterministic by construction.** A fixed shell, prompt, font and viewport,
+  with reduced motion for web demos, so a re-render differs only when the
+  content does.
 
 ## Contributing
 
@@ -250,12 +290,14 @@ request the keys to the repo. evergif never uses `pull_request_target`.
 python3 -m unittest discover -s tests -v
 ```
 
-23 tests cover the parts where a mistake is expensive: the safety policies that
+23 tests cover the places where a mistake is expensive: the safety policies that
 decide what may be recorded, and the README editing that runs against other
 people's files. CI runs them on Python 3.10 and 3.13, lints every generated
-workflow with actionlint, and re-renders both demos on every push.
+workflow with actionlint **and** shellcheck, re-renders this repository's own
+demos in `demo/` on every push, and verifies the Docker path for web demos on a
+Linux runner.
 
-## What's in this repo
+### What's in this repository
 
 ```
 skills/evergif/SKILL.md        the canonical skill; everything else points here
@@ -266,15 +308,16 @@ skills/evergif/references/     tape cookbook, web demos, optimization, troublesh
 .gemini/skills/evergif    ->   ../../skills/evergif
 .claude-plugin/                Claude Code plugin + marketplace manifests
 examples/                      two CLI fixtures and one web app, all recorded by CI
-tests/                         run with: python3 -m unittest discover -s tests
+tests/                         python3 -m unittest discover -s tests
 ```
 
 There is exactly one copy of the skill. Every agent path is a symlink to it.
 
 ## Roadmap
 
-**v0.2 (current)** — web app demos with Playwright, rendering in the cloud so
-contributors need no local toolchain, and several demo GIFs per README.
+**v0.4 — current.** Terminal and web demos, several demos per README, rendering
+in CI for contributors with no local toolchain, freshness that re-renders only
+what changed, and full-quality GIFs at display resolution.
 
 Planned next:
 
@@ -284,8 +327,8 @@ Planned next:
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE).
 
-Built on [vhs](https://github.com/charmbracelet/vhs) and
-[vhs-action](https://github.com/charmbracelet/vhs-action) by Charm. Packaging
-follows the pattern set by [brag](https://github.com/latent-spaces/brag).
+Built on [vhs](https://github.com/charmbracelet/vhs) by Charm and
+[Playwright](https://playwright.dev) by Microsoft. Packaging follows the pattern
+set by [brag](https://github.com/latent-spaces/brag).
