@@ -30,6 +30,13 @@ GIFSICLE_LEVELS = [  # (lossy, colors, scale)
 FFMPEG_LEVELS = [  # (fps, colors, scale)
     (24, 256, 1.0), (15, 128, 1.0), (12, 64, 1.0), (10, 64, 0.8), (8, 48, 0.66),
 ]
+# UI screenshots survive lossy compression far better than colour reduction:
+# crushing the palette bands gradients and fringes small text, which is most of
+# what a web demo shows. Give up colours last.
+WEB_GIFSICLE_LEVELS = [
+    (0, 256, 1.0), (30, 256, 1.0), (60, 256, 1.0), (90, 256, 1.0),
+    (120, 256, 1.0), (140, 192, 1.0), (160, 128, 0.9), (200, 96, 0.8),
+]
 PASSTHROUGH_ENV = ("PATH", "HOME", "TMPDIR", "TERM", "LANG", "LC_ALL", "SHELL",
                    "USER", "LOGNAME", "VIRTUAL_ENV", "SYSTEMROOT", "XDG_CACHE_HOME")
 
@@ -136,10 +143,10 @@ def ffmpeg_pass(src: str, dst: str, fps: int, colors: int, scale: float) -> list
     return ["ffmpeg", "-v", "error", "-y", "-i", src, "-vf", graph, "-loop", "0", dst]
 
 
-def optimize(gif: Path, cwd: Path, target: int) -> dict:
+def optimize(gif: Path, cwd: Path, target: int, levels: list | None = None) -> dict:
     original = gif.stat().st_size
     if shutil.which("gifsicle"):
-        tool, levels = "gifsicle", GIFSICLE_LEVELS
+        tool, levels = "gifsicle", levels or GIFSICLE_LEVELS
     elif shutil.which("ffmpeg"):
         tool, levels = "ffmpeg", FFMPEG_LEVELS
     else:

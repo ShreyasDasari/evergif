@@ -87,15 +87,36 @@ Freshness is measured on the page's **visible text**, not on pixels: the runner
 writes `demo/<name>.transcript.txt` after each step and CI hashes it. A CSS
 tweak will not trigger a re-render; a changed label will.
 
+## Telling the whole story
+
+A visitor should understand what the project is from the GIF alone. Record the
+arc, not a feature:
+
+1. **Open on the view that says what this is** -- the main screen, with data
+   already in it. An empty state as frame one wastes the most valuable second.
+2. **Do the thing the project exists for**, with realistic input. "Acme
+   Corporation" and "1500" read as a real invoice; "test" and "123" read as a
+   test.
+3. **End on the result**, held long enough to read -- the generated document,
+   the updated total, the passing run.
+
+Five to eight steps is usually the whole story. Hold the final state for at
+least a second (`pause 1200`): a GIF loops, and the last frame is the one a
+reader sees while deciding whether to care.
+
 ## Sizing and weight
 
-Web video is far heavier than terminal output. The conversion runs at 12 fps
-and scales to 1000px wide, which keeps a ten-second demo comfortably under
-1 MB. If a GIF comes out too big, cut steps or lower `--fps` before touching
-quality; a 30-second web demo is too long regardless of its file size.
+Web video is far heavier than terminal output. The conversion runs at 10 fps
+and **does not downscale**: shrinking a UI recording softens every label in it.
 
-A viewport of `1000x620` suits a README. Taller than about 700px and the GIF
-gets letterboxed by GitHub's content width.
+Record at the size you want shown. GitHub renders a README about 890px wide,
+so a 1100px recording is displayed near 1:1 and stays sharp, while a 1600px one
+is squeezed by the browser and looks blurry no matter how good the GIF is. Tall
+pages are fine; wide ones are what hurt.
+
+If a GIF comes out too big, cut steps or lower `--fps` first. Optimization
+gives up colours last, because a crushed palette bands gradients and fringes
+small text -- the two things a UI demo is made of.
 
 ## Safety
 

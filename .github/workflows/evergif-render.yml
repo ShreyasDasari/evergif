@@ -100,14 +100,30 @@ jobs:
           NAMES: ${{ steps.pick.outputs.names }}
         run: |
           set -euo pipefail
+          # Start lossless and only give up quality if the GIF is too heavy.
+          # Every level is applied to the pristine render, never stacked.
+          optimize_gif() {
+            local gif="$1" target=$((2 * 1024 * 1024)) pristine
+            pristine="$(mktemp /tmp/evergif-XXXX.gif)"
+            cp "$gif" "$pristine"
+            local flags=('' '--lossy=60' '--lossy=100 --colors 128' \
+                         '--lossy=140 --colors 64' '--lossy=200 --colors 48')
+            local level
+            for level in "${flags[@]}"; do
+              # shellcheck disable=SC2086
+              gifsicle -O3 $level --no-comments --no-names --no-extensions \
+                "$pristine" -o "$gif"
+              [ "$(stat -c%s "$gif")" -le "$target" ] && break
+            done
+            rm -f "$pristine"
+          }
           for name in $NAMES; do
             vhs "demo/$name.tape"
             if [ ! -f "demo/$name.gif" ]; then
               echo "::error::vhs produced no GIF for demo '$name'"
               exit 1
             fi
-            gifsicle -O3 --lossy=80 --colors 128 --no-comments --no-names \
-              --no-extensions -b "demo/$name.gif"
+            optimize_gif "demo/$name.gif"
             ls -lh "demo/$name.gif"
           done
 

@@ -4,7 +4,7 @@ Output demo/evergif.gif
 
 Set Shell "bash"
 Set FontSize 18
-Set Width 1200
+Set Width 1100
 Set Height 300
 Set Padding 24
 Set Theme "Catppuccin Mocha"

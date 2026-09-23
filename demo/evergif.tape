@@ -4,8 +4,8 @@ Output demo/evergif.gif
 
 Set Shell "bash"
 Set FontSize 18
-Set Width 1200
-Set Height 420
+Set Width 1100
+Set Height 380
 Set Padding 24
 Set Theme "Catppuccin Mocha"
 Set TypingSpeed 45ms
@@ -14,12 +14,12 @@ Set CursorBlink false
 Env BASH_SILENCE_DEPRECATION_WARNING "1"
 
 Hide
-Type "export PS1='> ' PROMPT_COMMAND='' HISTFILE=/dev/null && clear"
+Type `export PATH="$PWD/skills/evergif/scripts:$PATH" PS1='> ' PROMPT_COMMAND='' HISTFILE=/dev/null && clear`
 Enter
 Wait@10s
 Show
 
-Type 'python3 skills/evergif/scripts/tape.py --commands "todo --help; todo stats" --stdout | head -n 14'
+Type 'embed.py --alt "Demo of the todo CLI" --readme examples/shcli/README.md --dry-run'
 Sleep 400ms
 Enter
 Wait@15s
@@ -31,7 +31,7 @@ Enter
 Wait@10s
 Show
 
-Type 'python3 skills/evergif/scripts/embed.py --alt "Terminal demo of the todo CLI" --readme examples/shcli/README.md --dry-run'
+Type 'tape.py --commands "todo --help; todo stats" --stdout | head -12'
 Sleep 400ms
 Enter
 Wait@15s

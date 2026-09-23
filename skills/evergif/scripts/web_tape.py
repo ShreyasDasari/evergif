@@ -4,7 +4,7 @@
 Usage:
   web_tape.py --steps "goto /; click #new; fill #title Hello; wait .saved"
               [--name NAME] [--url http://localhost:3000] [--serve "npm run dev"]
-              [--size 1280x720] [--pause 900] [--allow-external] [--stdout]
+              [--size 1100x680] [--pause 900] [--allow-external] [--stdout]
 
 This is the web equivalent of a vhs tape: a committed, reviewable script that
 renders the same demo every time. Steps are checked against a safety policy
@@ -188,7 +188,10 @@ def main() -> int:
     parser.add_argument("--url", default=DEFAULT_URL, help="where the app is served")
     parser.add_argument("--serve", default=None,
                         help='command that starts the app, e.g. "npm run dev"')
-    parser.add_argument("--size", default="1280x720", help="viewport, WIDTHxHEIGHT")
+    parser.add_argument("--size", default="1100x680",
+                        help="viewport, WIDTHxHEIGHT. GitHub renders a README "
+                             "about 890px wide, so a much wider recording is "
+                             "scaled down by the browser and looks soft")
     parser.add_argument("--pause", type=int, default=900,
                         help="ms to hold after each step")
     parser.add_argument("--scheme", choices=("light", "dark"), default="light")

@@ -4,7 +4,7 @@ description: Generate reproducible demo GIFs for a README and keep them fresh in
 license: MIT
 compatibility: Requires Python 3.10+ and vhs (with ttyd and ffmpeg) for terminal demos. Web demos need Node 18+; Playwright is fetched on demand.
 metadata:
-  version: "0.3.0"
+  version: "0.4.0"
   homepage: https://github.com/ShreyasDasari/evergif
 ---
 

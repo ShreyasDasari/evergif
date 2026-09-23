@@ -31,7 +31,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-from render import MB, optimize
+from render import MB, WEB_GIFSICLE_LEVELS, optimize
 
 PLAYWRIGHT_VERSION = "1.63.0"
 PLAYWRIGHT_IMAGE = f"mcr.microsoft.com/playwright:v{PLAYWRIGHT_VERSION}-noble"
@@ -144,7 +144,10 @@ def run_script(script: Path, cwd: Path, docker: bool) -> None:
 
 
 def to_gif(webm: Path, gif: Path, fps: int, width: int) -> None:
-    graph = (f"fps={fps},scale={width}:-1:flags=lanczos,split[a][b];"
+    # width 0 keeps the recording's own pixels. Downscaling a UI recording
+    # softens every label in it, so it is a last resort, not a default.
+    scaling = f",scale={width}:-1:flags=lanczos" if width else ""
+    graph = (f"fps={fps}{scaling},split[a][b];"
              "[a]palettegen=max_colors=256:stats_mode=diff[p];"
              "[b][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle")
     cmd = ["ffmpeg", "-v", "error", "-y", "-i", str(webm), "-vf", graph,
@@ -178,8 +181,13 @@ def render_one(script: Path, args: argparse.Namespace, cwd: Path) -> dict:
 
     if not webm.is_file():
         sys.exit(f"error: no video at {webm}")
-    digest = hashlib.sha256(transcript.read_bytes()).hexdigest() \
-        if transcript.is_file() else "none"
+    # Hash the settings with the transcript: changing the viewport or the steps
+    # must re-render even when the page's text is unchanged. Must stay
+    # byte-identical to what the workflow computes.
+    digest = hashlib.sha256(
+        script.with_suffix(".json").read_bytes()
+        + (transcript.read_bytes() if transcript.is_file() else b"")
+    ).hexdigest()
     transcript.unlink(missing_ok=True)  # the hash in the lock file is the record
 
     backup = gif.with_suffix(".gif.previous") if gif.is_file() else None
@@ -197,7 +205,8 @@ def render_one(script: Path, args: argparse.Namespace, cwd: Path) -> dict:
     if not args.keep_webm:
         webm.unlink(missing_ok=True)
 
-    result = optimize(gif, cwd, int(args.target_mb * MB))
+    result = optimize(gif, cwd, int(args.target_mb * MB),
+                      levels=WEB_GIFSICLE_LEVELS)
     lock.write_text(digest, encoding="utf-8")
     result.update({"demo": name, "script": script.as_posix(), "gif": gif.as_posix(),
                    "mb": round(result["bytes"] / MB, 2),
@@ -216,9 +225,12 @@ def main() -> int:
                         help="render every demo/*.web.mjs")
     parser.add_argument("--docker", action="store_true",
                         help=f"run inside {PLAYWRIGHT_IMAGE}")
-    parser.add_argument("--fps", type=int, default=12,
-                        help="web video is heavy; 12 reads as smooth for UI")
-    parser.add_argument("--width", type=int, default=1000)
+    parser.add_argument("--fps", type=int, default=10,
+                        help="UI motion reads as smooth at 10; fewer frames "
+                             "leaves more bytes for each one")
+    parser.add_argument("--width", type=int, default=0,
+                        help="downscale to this width; 0 keeps the recording's "
+                             "own resolution, which keeps UI text crisp")
     parser.add_argument("--target-mb", type=float, default=2.0)
     parser.add_argument("--max-mb", type=float, default=5.0)
     parser.add_argument("--keep-webm", action="store_true")

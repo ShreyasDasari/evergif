@@ -58,7 +58,9 @@ __EVERGIF_SETUP__
                 bash -c "$command" 2>&1
               done <<< "$commands"
             )
-            new=$(printf '%s' "$transcript" | sha256sum | cut -d' ' -f1)
+            # The tape itself counts: changing the theme, size or pacing must
+            # re-render even though the commands print the same thing.
+            new=$( { cat "$tape"; printf '%s' "$transcript"; } | sha256sum | cut -d' ' -f1)
             old=$(cat "demo/$name.lock" 2>/dev/null || echo none)
             printf '%s' "$new" > "demo/$name.lock"
             if [ "$old" = "$new" ] && [ -f "demo/$name.gif" ]; then
@@ -96,14 +98,30 @@ __EVERGIF_SETUP__
           STALE: ${{ steps.check.outputs.stale }}
         run: |
           set -euo pipefail
+          # Start lossless and only give up quality if the GIF is too heavy.
+          # Every level is applied to the pristine render, never stacked.
+          optimize_gif() {
+            local gif="$1" target=$((2 * 1024 * 1024)) pristine
+            pristine="$(mktemp /tmp/evergif-XXXX.gif)"
+            cp "$gif" "$pristine"
+            local flags=('' '--lossy=60' '--lossy=100 --colors 128' \
+                         '--lossy=140 --colors 64' '--lossy=200 --colors 48')
+            local level
+            for level in "${flags[@]}"; do
+              # shellcheck disable=SC2086
+              gifsicle -O3 $level --no-comments --no-names --no-extensions \
+                "$pristine" -o "$gif"
+              [ "$(stat -c%s "$gif")" -le "$target" ] && break
+            done
+            rm -f "$pristine"
+          }
           for name in $STALE; do
             vhs "demo/$name.tape"
             if [ ! -f "demo/$name.gif" ]; then
               echo "::error::vhs produced no GIF for demo '$name'"
               exit 1
             fi
-            gifsicle -O3 --lossy=80 --colors 128 --no-comments --no-names \
-              --no-extensions -b "demo/$name.gif"
+            optimize_gif "demo/$name.gif"
             ls -lh "demo/$name.gif"
           done
 
@@ -211,6 +229,23 @@ __EVERGIF_SETUP__
           set -uo pipefail
           changed=''
           found=''
+          # UI survives lossy compression better than a crushed palette, which
+          # bands gradients and fringes small text. Give up colours last.
+          optimize_web_gif() {
+            local gif="$1" target=$((2 * 1024 * 1024)) pristine
+            pristine="$(mktemp /tmp/evergif-XXXX.gif)"
+            cp "$gif" "$pristine"
+            local flags=('' '--lossy=60' '--lossy=120' '--lossy=140 --colors 192' \
+                         '--lossy=160 --colors 128')
+            local level
+            for level in "${flags[@]}"; do
+              # shellcheck disable=SC2086
+              gifsicle -O3 $level --no-comments --no-names --no-extensions \
+                "$pristine" -o "$gif"
+              [ "$(stat -c%s "$gif")" -le "$target" ] && break
+            done
+            rm -f "$pristine"
+          }
           echo "::notice::web demos found: $(printf '%s ' demo/*.web.mjs)"
           read_key() { python3 -c "import json,sys;print(json.load(open(sys.argv[1])).get(sys.argv[2]) or '')" "$1" "$2"; }
           for script in demo/*.web.mjs; do
@@ -244,12 +279,11 @@ __EVERGIF_SETUP__
               exit 1
             fi
             ffmpeg -v error -y -i "$webm" -vf \
-              "fps=12,scale=1000:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=256:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle" \
+              "fps=10,split[a][b];[a]palettegen=max_colors=256:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle" \
               -loop 0 "demo/$name.gif"
-            gifsicle -O3 --lossy=80 --colors 128 --no-comments --no-names \
-              --no-extensions -b "demo/$name.gif"
+            optimize_web_gif "demo/$name.gif"
             rm -rf "$webm" "demo/.$name-video"
-            new=$(sha256sum "$transcript" | cut -d' ' -f1)
+            new=$( { cat "$settings"; cat "$transcript"; } | sha256sum | cut -d' ' -f1)
             old=$(cat "demo/$name.lock" 2>/dev/null || echo none)
             if [ "$old" = "$new" ]; then
               echo "$name: page content unchanged, keeping the committed GIF"

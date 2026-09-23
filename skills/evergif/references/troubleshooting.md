@@ -69,7 +69,9 @@ was edited), or a prompt from the user's own `PROMPT_COMMAND` (only happens if
 - **The first run after adding the workflow opens one PR.** It creates
   `demo/evergif.lock`. Merge it; later runs stay quiet until the CLI changes.
 - **`demo/<name>.lock` is not optional.** It is the record of what that demo
-  shows. Commit it alongside the GIF.
+  shows: a hash of the tape (or the web settings) together with the output it
+  produced. Commit it alongside the GIF. Editing a tape's theme or size changes
+  the lock, so cosmetic edits re-render too.
 - **A demo re-renders when a different demo changed.** Each demo has its own
   lock, so this means both demos really do show the changed output. Narrow one
   of them to commands that do not overlap.

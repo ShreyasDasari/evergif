@@ -45,14 +45,14 @@
     {
       "action": "pause",
       "args": [
-        "900"
+        "1200"
       ],
-      "raw": "pause 900"
+      "raw": "pause 1200"
     }
   ],
   "viewport": {
-    "width": 1000,
-    "height": 620
+    "width": 1100,
+    "height": 680
   },
   "pauseMs": 900,
   "colorScheme": "light",
